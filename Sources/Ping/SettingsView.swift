@@ -57,6 +57,8 @@ struct AppCardView: View {
   let onDelete: () -> Void
   let onHover: (Bool) -> Void
 
+  @State private var isHovering = false
+
   var body: some View {
     VStack(spacing: 0) {
       // Identity row
@@ -221,7 +223,13 @@ struct AppCardView: View {
     .background(.background.secondary)
     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     .onHover { hovering in
+      isHovering = hovering
       onHover(hovering)
+    }
+    .onChange(of: app) {
+      if isHovering {
+        onHover(true)
+      }
     }
   }
 }

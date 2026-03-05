@@ -5,7 +5,7 @@ enum GlowPosition: String, Codable, CaseIterable {
   case top, bottom, left, right
 }
 
-struct AppSettings: Codable, Identifiable {
+struct AppSettings: Codable, Equatable, Identifiable {
   var id = UUID()
   var name: String
   var color: String
