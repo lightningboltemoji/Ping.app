@@ -62,6 +62,14 @@ class DockPoller {
       state.dockAppNames = names
     }
 
+    // Load icons for any app not yet cached
+    for item in dockItems {
+      guard state.appIcons[item.title] == nil, let url = item.appURL else { continue }
+      let icon = NSWorkspace.shared.icon(forFile: url.path)
+      icon.size = NSSize(width: 32, height: 32)
+      state.appIcons[item.title] = icon
+    }
+
     // Check configured apps for badges
     var colors: [NSColor] = []
     for app in state.apps {

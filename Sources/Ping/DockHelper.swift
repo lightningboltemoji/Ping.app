@@ -18,6 +18,14 @@ struct DockItem {
   let title: String
   let axElement: AXUIElement
 
+  var appURL: URL? {
+    var urlRef: CFTypeRef?
+    let error = AXUIElementCopyAttributeValue(
+      self.axElement, kAXURLAttribute as CFString, &urlRef)
+    guard error == .success else { return nil }
+    return urlRef as? URL
+  }
+
   func badgeCount() -> String? {
     var statusLabel: CFTypeRef?
     let error = AXUIElementCopyAttributeValue(

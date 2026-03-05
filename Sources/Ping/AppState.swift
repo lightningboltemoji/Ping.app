@@ -51,6 +51,7 @@ class AppState {
   var count = 0
   var apps: [AppSettings] = []
   var dockAppNames: [String] = []
+  var appIcons: [String: NSImage] = [:]
   var activeGlowColors: [NSColor] = []
   var previewGlowColor: NSColor? = nil
 }

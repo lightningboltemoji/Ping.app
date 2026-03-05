@@ -53,6 +53,7 @@ struct SettingsSection<Content: View>: View {
 struct AppCardView: View {
   @Binding var app: AppSettings
   let dockAppNames: [String]
+  let appIcons: [String: NSImage]
   let onDelete: () -> Void
   let onHover: (Bool) -> Void
 
@@ -60,14 +61,30 @@ struct AppCardView: View {
     VStack(spacing: 0) {
       // Identity row
       HStack(spacing: 8) {
-        Circle()
-          .fill(Color(nsColor: AppState.resolvedColor(for: app, badge: "")))
-          .frame(width: 12, height: 12)
+        if let icon = appIcons[app.name] {
+          Image(nsImage: icon)
+            .resizable()
+            .frame(width: 18, height: 18)
+            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        } else {
+          Circle()
+            .fill(Color(nsColor: AppState.resolvedColor(for: app, badge: "")))
+            .frame(width: 12, height: 12)
+        }
 
         Picker("App", selection: $app.name) {
           Text("Select app...").tag("")
           ForEach(dockAppNames, id: \.self) { name in
-            Text(name).tag(name)
+            Label {
+              Text(name)
+            } icon: {
+              if let icon = appIcons[name] {
+                Image(nsImage: icon)
+                  .resizable()
+                  .frame(width: 16, height: 16)
+              }
+            }
+            .tag(name)
           }
         }
         .labelsHidden()
@@ -309,6 +326,7 @@ struct SettingsView: View {
               AppCardView(
                 app: $app,
                 dockAppNames: state.dockAppNames,
+                appIcons: state.appIcons,
                 onDelete: {
                   let id = app.id
                   withAnimation(.easeInOut(duration: 0.2)) {
