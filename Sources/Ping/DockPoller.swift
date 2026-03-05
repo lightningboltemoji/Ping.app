@@ -71,15 +71,15 @@ class DockPoller {
     }
 
     // Check configured apps for badges
-    var colors: [NSColor] = []
+    var configs: [GlowConfig] = []
     for app in state.apps {
       if let dockItem = dockItems.first(where: { $0.title == app.name }) {
         if let badge = dockItem.badgeCount() {
-          colors.append(AppState.resolvedColor(for: app, badge: badge))
+          configs.append(AppState.resolvedConfig(for: app, badge: badge))
         }
       }
     }
 
-    state.activeGlowColors = colors
+    state.activeGlowConfigs = configs
   }
 }

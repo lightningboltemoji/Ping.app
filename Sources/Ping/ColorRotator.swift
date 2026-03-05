@@ -7,79 +7,67 @@
 
 import Cocoa
 
-struct ColorRotator {
+struct GlowConfigRotator {
   /// LRU order: front = next to show
-  private var queue: [NSColor] = []
-  private(set) var currentColor: NSColor?
+  private var queue: [GlowConfig] = []
+  private(set) var currentConfig: GlowConfig?
 
-  var isEmpty: Bool { currentColor == nil && queue.isEmpty }
+  var isEmpty: Bool { currentConfig == nil && queue.isEmpty }
 
-  var hasMultipleColors: Bool {
-    currentColor != nil && !queue.isEmpty
+  var hasMultipleConfigs: Bool {
+    currentConfig != nil && !queue.isEmpty
   }
 
-  /// Update available colors. New colors go to front of queue,
-  /// existing colors keep LRU order. Idempotent with same set.
-  mutating func setAvailable(_ colors: [NSColor]) {
-    guard !colors.isEmpty else {
+  /// Update available configs. New configs go to front of queue,
+  /// existing configs keep LRU order. Idempotent with same set.
+  mutating func setAvailable(_ configs: [GlowConfig]) {
+    guard !configs.isEmpty else {
       queue = []
-      currentColor = nil
+      currentConfig = nil
       return
     }
 
-    // If we have no current color, start fresh
-    guard let current = currentColor else {
-      currentColor = colors.first
-      queue = Array(colors.dropFirst())
+    // If we have no current config, start fresh
+    guard let current = currentConfig else {
+      currentConfig = configs.first
+      queue = Array(configs.dropFirst())
       return
     }
 
     let allKnown = [current] + queue
 
-    // Brand-new colors go to front (highest priority)
-    var newQueue: [NSColor] = []
-    for color in colors {
-      if !allKnown.contains(where: { colorsEqual($0, color) }) {
-        newQueue.append(color)
+    // Brand-new configs go to front (highest priority)
+    var newQueue: [GlowConfig] = []
+    for config in configs {
+      if !allKnown.contains(where: { $0 == config }) {
+        newQueue.append(config)
       }
     }
 
-    // Existing queue colors still available keep their LRU order
-    for color in queue {
-      if colors.contains(where: { colorsEqual($0, color) }) {
-        newQueue.append(color)
+    // Existing queue configs still available keep their LRU order
+    for config in queue {
+      if configs.contains(where: { $0 == config }) {
+        newQueue.append(config)
       }
     }
 
     queue = newQueue
 
     // If current was removed, pull next from queue
-    if !colors.contains(where: { colorsEqual($0, current) }) {
-      currentColor = queue.isEmpty ? nil : queue.removeFirst()
+    if !configs.contains(where: { $0 == current }) {
+      currentConfig = queue.isEmpty ? nil : queue.removeFirst()
     }
   }
 
-  /// Advance to next color. Returns the new current color.
-  /// If only one color, returns current again. If empty, returns nil.
-  mutating func next() -> NSColor? {
-    guard let current = currentColor else { return nil }
+  /// Advance to next config. Returns the new current config.
+  /// If only one config, returns current again. If empty, returns nil.
+  mutating func next() -> GlowConfig? {
+    guard let current = currentConfig else { return nil }
     guard !queue.isEmpty else { return current }
 
     let next = queue.removeFirst()
     queue.append(current)
-    currentColor = next
+    currentConfig = next
     return next
-  }
-
-  // MARK: - Private
-
-  private func colorsEqual(_ a: NSColor, _ b: NSColor) -> Bool {
-    guard let a = a.usingColorSpace(.sRGB),
-      let b = b.usingColorSpace(.sRGB)
-    else { return false }
-    return abs(a.redComponent - b.redComponent) < 0.01
-      && abs(a.greenComponent - b.greenComponent) < 0.01
-      && abs(a.blueComponent - b.blueComponent) < 0.01
-      && abs(a.alphaComponent - b.alphaComponent) < 0.01
   }
 }

@@ -17,7 +17,6 @@ class GlowWindow: NSWindow {
     screen: NSScreen,
     width: Double,
     height: Double,
-    baseColor: NSColor,
   ) {
     let height = screen.frame.height * height as CGFloat
     let windowRect = NSRect(
@@ -42,16 +41,16 @@ class GlowWindow: NSWindow {
     self.ignoresMouseEvents = true  // Allow clicks to pass through
 
     // Create and set the glow view
-    glowView = GlowView(frame: windowRect, baseColor: baseColor)
+    glowView = GlowView(frame: windowRect)
     self.contentView = glowView
   }
 
-  func updateColors(_ colors: [NSColor]) {
-    glowView.updateAvailableColors(colors)
+  func updateConfigs(_ configs: [GlowConfig]) {
+    glowView.updateAvailableConfigs(configs)
   }
 
-  func setPreviewColor(_ color: NSColor) {
-    glowView.setPreviewColor(color)
+  func setPreviewConfig(_ config: GlowConfig) {
+    glowView.setPreviewConfig(config)
   }
 
   func clearPreview() {

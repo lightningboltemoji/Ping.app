@@ -335,9 +335,9 @@ struct SettingsView: View {
                 },
                 onHover: { hovering in
                   if hovering {
-                    state.previewGlowColor = AppState.resolvedColor(for: app, badge: "")
+                    state.previewGlowConfig = AppState.resolvedConfig(for: app, badge: "")
                   } else {
-                    state.previewGlowColor = nil
+                    state.previewGlowConfig = nil
                   }
                 }
               )

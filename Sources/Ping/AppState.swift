@@ -46,12 +46,16 @@ class AppState {
     return nsColor(forName: name).withAlphaComponent(app.opacity)
   }
 
+  static func resolvedConfig(for app: AppSettings, badge: String) -> GlowConfig {
+    GlowConfig(color: resolvedColor(for: app, badge: badge), size: app.size)
+  }
+
   var launchOnStartup = true
   var refreshInterval = 1.0
   var count = 0
   var apps: [AppSettings] = []
   var dockAppNames: [String] = []
   var appIcons: [String: NSImage] = [:]
-  var activeGlowColors: [NSColor] = []
-  var previewGlowColor: NSColor? = nil
+  var activeGlowConfigs: [GlowConfig] = []
+  var previewGlowConfig: GlowConfig? = nil
 }
