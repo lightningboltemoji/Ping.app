@@ -105,10 +105,14 @@ class GlowController {
     } onChange: {
       Task { @MainActor in
         if let color = self.state.previewGlowColor {
-          self.glowWindow?.updateColor(color)
+          self.glowWindow?.setPreviewColor(color)
           self.glowWindow?.showGlow()
         } else {
-          self.handleColorChange(self.state.activeGlowColors)
+          self.glowWindow?.clearPreview()
+          // If no active colors, hide after preview ends
+          if self.state.activeGlowColors.isEmpty {
+            self.glowWindow?.hideGlow()
+          }
         }
         self.observePreview()
       }

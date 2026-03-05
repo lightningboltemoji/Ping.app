@@ -46,12 +46,16 @@ class GlowWindow: NSWindow {
     self.contentView = glowView
   }
 
-  func updateColor(_ color: NSColor) {
-    glowView.setGlowColor(color: color)
+  func updateColors(_ colors: [NSColor]) {
+    glowView.updateAvailableColors(colors)
   }
 
-  func updateColors(_ colors: [NSColor]) {
-    glowView.setGlowColors(colors: colors)
+  func setPreviewColor(_ color: NSColor) {
+    glowView.setPreviewColor(color)
+  }
+
+  func clearPreview() {
+    glowView.clearPreview()
   }
 
   func showGlow() {

@@ -150,7 +150,7 @@ struct SettingsView: View {
         // Header
         VStack(spacing: 4) {
           Text("ping").font(.custom("Chango", size: 48))
-          Text("Notification helper")
+          Text("Never miss a notification")
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }
@@ -224,7 +224,7 @@ struct SettingsView: View {
               Text("No apps configured")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-              Text("Tap + to monitor an app's dock badge")
+              Text("Add a new app to monitor with +")
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
             }
