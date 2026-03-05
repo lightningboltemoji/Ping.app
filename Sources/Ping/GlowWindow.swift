@@ -50,6 +50,10 @@ class GlowWindow: NSWindow {
     glowView.setGlowColor(color: color)
   }
 
+  func updateColors(_ colors: [NSColor]) {
+    glowView.setGlowColors(colors: colors)
+  }
+
   func showGlow() {
     self.makeKeyAndOrderFront(nil)
   }

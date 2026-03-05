@@ -72,6 +72,17 @@ struct DockItem {
       let axElement = Unmanaged<AXUIElement>.fromOpaque(element!)
         .takeUnretainedValue()
 
+      // Only include actual application dock items
+      var subrole: CFTypeRef?
+      AXUIElementCopyAttributeValue(
+        axElement,
+        kAXSubroleAttribute as CFString,
+        &subrole
+      )
+      guard let subroleString = subrole as? String,
+        subroleString == "AXApplicationDockItem"
+      else { continue }
+
       var title: CFTypeRef?
       let titleError = AXUIElementCopyAttributeValue(
         axElement,

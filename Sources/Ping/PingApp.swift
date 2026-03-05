@@ -13,22 +13,22 @@ struct PingApp: App {
 
   private let state: AppState
   private let dockPoller: DockPoller
-  private var glowWindow: GlowWindow?
-  private var colorCycleTimer: Timer?
-  private var currentColorIndex = 0
+  private let glowController: GlowController
 
   init() {
     let state = AppState()
     self.state = state
     self.dockPoller = DockPoller(state: state)
 
+    var glowWindow: GlowWindow?
     if let screen = NSScreen.main {
-      self.glowWindow = GlowWindow(
+      glowWindow = GlowWindow(
         screen: screen, width: 1, height: 0.25,
         baseColor: NSColor(red: 0.0, green: 0.8, blue: 0.2, alpha: 0.9)
       )
-      self.glowWindow?.hideGlow()
+      glowWindow?.hideGlow()
     }
+    self.glowController = GlowController(state: state, glowWindow: glowWindow)
   }
 
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -54,6 +54,8 @@ struct PingApp: App {
 
     Settings {
       SettingsView().onAppear {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
         if let window = NSApplication.shared.windows.first(where: {
           $0.identifier?.rawValue.contains("Settings") ?? false
         }) {
@@ -62,63 +64,64 @@ struct PingApp: App {
           window.styleMask.insert(.fullSizeContentView)
         }
       }
+      .onDisappear {
+        NSApp.setActivationPolicy(.accessory)
+      }
     }
     .environment(state)
-    .windowLevel(.floating)
     .windowStyle(.hiddenTitleBar)
     .windowResizability(.contentSize)
-
-    GlowScene(state: state, glowWindow: glowWindow)
   }
 }
 
-@available(macOS 26, *)
-struct GlowScene: Scene {
-  let state: AppState
-  let glowWindow: GlowWindow?
+@MainActor
+class GlowController {
+  private let state: AppState
+  private let glowWindow: GlowWindow?
 
-  var body: some Scene {
-    MenuBarExtra("GlowController", isInserted: .constant(false)) {
-      GlowController(state: state, glowWindow: glowWindow)
+  init(state: AppState, glowWindow: GlowWindow?) {
+    self.state = state
+    self.glowWindow = glowWindow
+    observeColors()
+    observePreview()
+  }
+
+  private func observeColors() {
+    withObservationTracking {
+      _ = state.activeGlowColors
+    } onChange: {
+      Task { @MainActor in
+        if self.state.previewGlowColor == nil {
+          self.handleColorChange(self.state.activeGlowColors)
+        }
+        self.observeColors()
+      }
     }
   }
-}
 
-@available(macOS 26, *)
-struct GlowController: View {
-  @State var state: AppState
-  let glowWindow: GlowWindow?
-  @State private var colorCycleIndex = 0
-  @State private var cycleTimer: Timer?
-
-  var body: some View {
-    EmptyView()
-      .onChange(of: state.activeGlowColors) { _, newColors in
-        handleColorChange(newColors)
+  private func observePreview() {
+    withObservationTracking {
+      _ = state.previewGlowColor
+    } onChange: {
+      Task { @MainActor in
+        if let color = self.state.previewGlowColor {
+          self.glowWindow?.updateColor(color)
+          self.glowWindow?.showGlow()
+        } else {
+          self.handleColorChange(self.state.activeGlowColors)
+        }
+        self.observePreview()
       }
+    }
   }
 
   private func handleColorChange(_ colors: [NSColor]) {
-    cycleTimer?.invalidate()
-    cycleTimer = nil
-    colorCycleIndex = 0
-
     if colors.isEmpty {
       glowWindow?.hideGlow()
       return
     }
 
-    glowWindow?.updateColor(colors[0])
+    glowWindow?.updateColors(colors)
     glowWindow?.showGlow()
-
-    if colors.count > 1 {
-      cycleTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) {
-        _ in
-        DispatchQueue.main.async {
-          colorCycleIndex = (colorCycleIndex + 1) % colors.count
-          glowWindow?.updateColor(colors[colorCycleIndex])
-        }
-      }
-    }
   }
 }

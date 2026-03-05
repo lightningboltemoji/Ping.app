@@ -1,10 +1,16 @@
 import AppKit
 import SwiftUI
 
+enum GlowPosition: String, Codable, CaseIterable {
+  case top, bottom, left, right
+}
+
 struct AppSettings: Codable, Identifiable {
   var id = UUID()
   var name: String
   var color: String
+  var position: GlowPosition = .top
+  var size: Double = 0.25
 }
 
 @Observable
@@ -32,4 +38,5 @@ class AppState {
   var apps: [AppSettings] = []
   var dockAppNames: [String] = []
   var activeGlowColors: [NSColor] = []
+  var previewGlowColor: NSColor? = nil
 }

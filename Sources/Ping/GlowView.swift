@@ -8,19 +8,31 @@
 import Cocoa
 import QuartzCore
 
-class GlowView: NSView {
+class GlowView: NSView, @preconcurrency CAAnimationDelegate {
   private var glowLayer: CAGradientLayer!
-  private var pulseAnimation: CABasicAnimation!
-  private var baseColor: NSColor
+  private var colors: [NSColor] = []
+  private var colorCycleIndex = 0
+
+  private enum AnimationPhase {
+    case fadeIn
+    case fadeOut
+    case crossfade
+  }
+
+  private var phase: AnimationPhase = .fadeIn
+
+  private let minOpacity: Float = 0.25
+  private let maxOpacity: Float = 0.95
+  private let fadeDuration: CFTimeInterval = 2.0
+  private let crossfadeDuration: CFTimeInterval = 0.6
 
   init(frame frameRect: NSRect, baseColor: NSColor) {
-    self.baseColor = baseColor
+    self.colors = [baseColor]
     super.init(frame: frameRect)
     setupGlowEffect()
   }
 
   required init?(coder: NSCoder) {
-    self.baseColor = NSColor()
     super.init(coder: coder)
     setupGlowEffect()
   }
@@ -31,12 +43,28 @@ class GlowView: NSView {
   }
 
   func setGlowColor(color: NSColor) {
-    self.baseColor = color
-    let one = color.cgColor
-    let two = color.withAlphaComponent(0.15).cgColor
-    let three = color.withAlphaComponent(0.0).cgColor
+    setGlowColors(colors: [color])
+  }
 
-    glowLayer.colors = [one, two, three]
+  func setGlowColors(colors: [NSColor]) {
+    self.colors = colors
+    self.colorCycleIndex = 0
+    if let first = colors.first {
+      applyColor(first)
+    }
+    startFadeIn()
+  }
+
+  private func gradientColors(for color: NSColor) -> [CGColor] {
+    [
+      color.cgColor,
+      color.withAlphaComponent(0.15).cgColor,
+      color.withAlphaComponent(0.0).cgColor,
+    ]
+  }
+
+  private func applyColor(_ color: NSColor) {
+    glowLayer.colors = gradientColors(for: color)
     glowLayer.locations = [0.0, 0.85, 1.0]
   }
 
@@ -47,28 +75,82 @@ class GlowView: NSView {
     glowLayer.frame = self.bounds
     glowLayer.type = .radial
 
-    setGlowColor(color: self.baseColor)
+    if let first = colors.first {
+      applyColor(first)
+    }
     glowLayer.startPoint = CGPoint(x: 0.5, y: 0)
     glowLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
 
+    glowLayer.opacity = minOpacity
     self.layer?.addSublayer(glowLayer)
 
-    setupPulseAnimation()
+    startFadeIn()
   }
 
-  private func setupPulseAnimation() {
-    pulseAnimation = CABasicAnimation(keyPath: "opacity")
-    pulseAnimation.fromValue = 0.25
-    pulseAnimation.toValue = 0.95
-    pulseAnimation.duration = 2.0
-    pulseAnimation.repeatCount = Float.infinity
-    pulseAnimation.autoreverses = true
-    pulseAnimation.timingFunction = CAMediaTimingFunction(
-      name: .easeInEaseOut
-    )
+  private func startFadeIn() {
+    phase = .fadeIn
+    glowLayer?.removeAllAnimations()
 
-    glowLayer.removeAnimation(forKey: "pulseAnimation")
-    glowLayer.add(pulseAnimation, forKey: "pulseAnimation")
+    glowLayer.opacity = maxOpacity
+
+    let anim = CABasicAnimation(keyPath: "opacity")
+    anim.fromValue = minOpacity
+    anim.toValue = maxOpacity
+    anim.duration = fadeDuration
+    anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+    anim.delegate = self
+
+    glowLayer?.add(anim, forKey: "glowAnimation")
+  }
+
+  private func startFadeOut() {
+    phase = .fadeOut
+
+    glowLayer.opacity = minOpacity
+
+    let anim = CABasicAnimation(keyPath: "opacity")
+    anim.fromValue = maxOpacity
+    anim.toValue = minOpacity
+    anim.duration = fadeDuration
+    anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+    anim.delegate = self
+
+    glowLayer?.add(anim, forKey: "glowAnimation")
+  }
+
+  private func startCrossfade() {
+    phase = .crossfade
+    let oldColors = glowLayer.colors
+    colorCycleIndex = (colorCycleIndex + 1) % colors.count
+    let newColors = gradientColors(for: colors[colorCycleIndex])
+
+    glowLayer.colors = newColors
+
+    let anim = CABasicAnimation(keyPath: "colors")
+    anim.fromValue = oldColors
+    anim.toValue = newColors
+    anim.duration = crossfadeDuration
+    anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+    anim.delegate = self
+
+    glowLayer.add(anim, forKey: "glowAnimation")
+  }
+
+  func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
+    guard flag else { return }
+
+    switch phase {
+    case .fadeIn:
+      startFadeOut()
+    case .fadeOut:
+      if colors.count > 1 {
+        startCrossfade()
+      } else {
+        startFadeIn()
+      }
+    case .crossfade:
+      startFadeIn()
+    }
   }
 
   override func layout() {
