@@ -4,15 +4,24 @@
 import PackageDescription
 
 let package = Package(
-    name: "Ping",
-    platforms: [
-        .macOS(.v26)
-    ],
-    targets: [
-        .executableTarget(
-            name: "Ping",
-            resources: [
-                .process("Resources/Chango-Regular.ttf")
-            ])
-    ]
+  name: "Ping",
+  platforms: [
+    .macOS(.v26)
+  ],
+  dependencies: [
+    .package(
+      url: "https://github.com/apple/swift-atomics.git",
+      .upToNextMajor(from: "1.3.0")
+    )
+  ],
+  targets: [
+    .executableTarget(
+      name: "Ping",
+      dependencies: [
+        .product(name: "Atomics", package: "swift-atomics")
+      ],
+      resources: [
+        .process("Resources/Chango-Regular.ttf")
+      ])
+  ]
 )

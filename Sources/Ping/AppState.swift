@@ -1,0 +1,35 @@
+import AppKit
+import SwiftUI
+
+struct AppSettings: Codable, Identifiable {
+  var id = UUID()
+  var name: String
+  var color: String
+}
+
+@Observable
+class AppState {
+
+  static let colorPalette: [(name: String, color: NSColor)] = [
+    ("Red", NSColor(red: 1.0, green: 0.2, blue: 0.2, alpha: 0.9)),
+    ("Orange", NSColor(red: 1.0, green: 0.6, blue: 0.0, alpha: 0.9)),
+    ("Yellow", NSColor(red: 1.0, green: 0.9, blue: 0.0, alpha: 0.9)),
+    ("Green", NSColor(red: 0.0, green: 0.8, blue: 0.2, alpha: 0.9)),
+    ("Blue", NSColor(red: 0.2, green: 0.4, blue: 1.0, alpha: 0.9)),
+    ("Purple", NSColor(red: 0.6, green: 0.2, blue: 1.0, alpha: 0.9)),
+    ("Pink", NSColor(red: 1.0, green: 0.3, blue: 0.6, alpha: 0.9)),
+    ("White", NSColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.9)),
+  ]
+
+  static func nsColor(forName name: String) -> NSColor {
+    colorPalette.first(where: { $0.name.lowercased() == name.lowercased() })?.color
+      ?? NSColor(red: 0.0, green: 0.8, blue: 0.2, alpha: 0.9)
+  }
+
+  var launchOnStartup = true
+  var refreshInterval = 1.0
+  var count = 0
+  var apps: [AppSettings] = []
+  var dockAppNames: [String] = []
+  var activeGlowColors: [NSColor] = []
+}

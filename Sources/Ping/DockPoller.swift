@@ -5,42 +5,74 @@
 //  Created by Tanner on 9/16/25.
 //
 
+import Atomics
 internal import Combine
 import Foundation
+import SwiftUI
 
-class DockPoller: ObservableObject {
+@MainActor
+class DockPoller {
 
-    @Published var count = 0
+  private let state: AppState
+  private var pollingTimer: Timer?
 
-    private var pollingTimer: Timer?
-    private var interval: TimeInterval
+  init(state: AppState) {
+    self.state = state
+    self.start()
+    self.observe()
+  }
 
-    init(interval: TimeInterval) {
-        self.interval = interval
+  private func observe() {
+    withObservationTracking {
+      _ = state.refreshInterval
+    } onChange: {
+      Task { @MainActor in
+        print("Interval changed: \(self.state.refreshInterval)")
+        self.setInterval(interval: self.state.refreshInterval)
+        self.observe()
+      }
+    }
+  }
+
+  func start() {
+    self.poll()
+    self.pollingTimer = Timer.scheduledTimer(
+      withTimeInterval: state.refreshInterval,
+      repeats: true,
+    ) { _ in
+      self.poll()
+    }
+  }
+
+  func stop() {
+    pollingTimer?.invalidate()
+  }
+
+  func setInterval(interval: TimeInterval) {
+    stop()
+    start()
+  }
+
+  func poll() {
+    let dockItems = DockItem.list()
+
+    // Update dock app names for the settings picker
+    let names = dockItems.compactMap { $0.title }.sorted()
+    if names != state.dockAppNames {
+      state.dockAppNames = names
     }
 
-    func start() {
-        self.poll()
-        self.pollingTimer = Timer.scheduledTimer(
-            withTimeInterval: interval,
-            repeats: true,
-        ) { _ in
-            self.poll()
+    // Check configured apps for badges
+    var colors: [NSColor] = []
+    for app in state.apps {
+      if let dockItem = dockItems.first(where: { $0.title == app.name }) {
+        let badge = dockItem.badgeCount()
+        if badge != nil {
+          colors.append(AppState.nsColor(forName: app.color))
         }
+      }
     }
 
-    func stop() {
-        pollingTimer?.invalidate()
-        pollingTimer = nil
-    }
-
-    func poll() {
-        print("Poll")
-        if let s = DockItem.list().first(where: { i in i.title == "Mail" }),
-            let i = Int(s.badgeCount() ?? "")
-        {
-            print("Count: ", i)
-            count = i
-        }
-    }
+    state.activeGlowColors = colors
+  }
 }

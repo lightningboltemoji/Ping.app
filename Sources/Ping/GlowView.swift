@@ -9,89 +9,70 @@ import Cocoa
 import QuartzCore
 
 class GlowView: NSView {
-    private var glowLayer: CAGradientLayer!
-    private var pulseAnimation: CABasicAnimation!
+  private var glowLayer: CAGradientLayer!
+  private var pulseAnimation: CABasicAnimation!
+  private var baseColor: NSColor
 
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        setupGlowEffect()
-    }
+  init(frame frameRect: NSRect, baseColor: NSColor) {
+    self.baseColor = baseColor
+    super.init(frame: frameRect)
+    setupGlowEffect()
+  }
 
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupGlowEffect()
-    }
+  required init?(coder: NSCoder) {
+    self.baseColor = NSColor()
+    super.init(coder: coder)
+    setupGlowEffect()
+  }
 
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        setupGlowEffect()
-    }
+  override func awakeFromNib() {
+    super.awakeFromNib()
+    setupGlowEffect()
+  }
 
-    private func setupGlowEffect() {
-        self.wantsLayer = true
+  func setGlowColor(color: NSColor) {
+    self.baseColor = color
+    let one = color.cgColor
+    let two = color.withAlphaComponent(0.15).cgColor
+    let three = color.withAlphaComponent(0.0).cgColor
 
-        // Create a radial gradient effect using CALayer with a custom drawing
-        glowLayer = CAGradientLayer()
-        glowLayer.frame = self.bounds
-        glowLayer.type = .radial
+    glowLayer.colors = [one, two, three]
+    glowLayer.locations = [0.0, 0.85, 1.0]
+  }
 
-        // Golden glow colors - adjust these for different effects
-        let goldColor = NSColor(red: 1.0, green: 0.8, blue: 0.2, alpha: 0.9)
-            .cgColor
-        let transparentGold = NSColor(
-            red: 1.0,
-            green: 0.8,
-            blue: 0.2,
-            alpha: 0.15
-        ).cgColor
-        let transparentGold2 = NSColor(
-            red: 1.0,
-            green: 0.8,
-            blue: 0.2,
-            alpha: 0.0
-        ).cgColor
+  private func setupGlowEffect() {
+    self.wantsLayer = true
 
-        glowLayer.colors = [goldColor, transparentGold, transparentGold2]
-        glowLayer.locations = [0.0, 0.9, 1.0]
+    glowLayer = CAGradientLayer()
+    glowLayer.frame = self.bounds
+    glowLayer.type = .radial
 
-        // Position the center of the radial gradient at the bottom center
-        glowLayer.startPoint = CGPoint(x: 0.5, y: 0)
-        glowLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
+    setGlowColor(color: self.baseColor)
+    glowLayer.startPoint = CGPoint(x: 0.5, y: 0)
+    glowLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
 
-        self.layer?.addSublayer(glowLayer)
+    self.layer?.addSublayer(glowLayer)
 
-        setupPulseAnimation()
-    }
+    setupPulseAnimation()
+  }
 
-    private func setupPulseAnimation() {
-        pulseAnimation = CABasicAnimation(keyPath: "opacity")
-        pulseAnimation.fromValue = 0.25
-        pulseAnimation.toValue = 0.95
-        pulseAnimation.duration = 2.0
-        pulseAnimation.repeatCount = Float.infinity
-        pulseAnimation.autoreverses = true
-        pulseAnimation.timingFunction = CAMediaTimingFunction(
-            name: .easeInEaseOut
-        )
+  private func setupPulseAnimation() {
+    pulseAnimation = CABasicAnimation(keyPath: "opacity")
+    pulseAnimation.fromValue = 0.25
+    pulseAnimation.toValue = 0.95
+    pulseAnimation.duration = 2.0
+    pulseAnimation.repeatCount = Float.infinity
+    pulseAnimation.autoreverses = true
+    pulseAnimation.timingFunction = CAMediaTimingFunction(
+      name: .easeInEaseOut
+    )
 
-        glowLayer.add(pulseAnimation, forKey: "pulseAnimation")
-    }
+    glowLayer.removeAnimation(forKey: "pulseAnimation")
+    glowLayer.add(pulseAnimation, forKey: "pulseAnimation")
+  }
 
-    override func layout() {
-        super.layout()
-        glowLayer?.frame = self.bounds
-    }
-
-    func setGlowColor(_ color: NSColor) {
-        let glowColor = color.cgColor
-        let transparentColor = color.withAlphaComponent(0.0).cgColor
-        glowLayer.colors = [transparentColor, glowColor, transparentColor]
-    }
-
-    func setGlowIntensity(_ intensity: Double) {
-        pulseAnimation.fromValue = max(0.1, intensity - 0.3)
-        pulseAnimation.toValue = min(1.0, intensity + 0.3)
-        glowLayer.removeAnimation(forKey: "pulseAnimation")
-        glowLayer.add(pulseAnimation, forKey: "pulseAnimation")
-    }
+  override func layout() {
+    super.layout()
+    glowLayer?.frame = self.bounds
+  }
 }

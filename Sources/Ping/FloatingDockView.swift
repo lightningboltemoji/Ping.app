@@ -9,26 +9,20 @@ import SwiftUI
 
 struct FloatingDockView: View {
 
-    @ObservedObject private var dockPoller = DockPoller(interval: 2.0)
+  @Environment(AppState.self) private var state
 
-    var body: some View {
-        VStack {
-            Text("Overlay \(dockPoller.count)")
-                .foregroundColor(.white)
-                .font(.headline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(0.5))
-        .onAppear {
-            print("Starting poller...")
-            dockPoller.start()
-        }
-        .onDisappear {
-            dockPoller.stop()
-        }
+  var body: some View {
+    @Bindable var state = state
+    VStack {
+      Text("Overlay \(state.count)")
+        .foregroundColor(.white)
+        .font(.headline)
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.black.opacity(0.5))
+  }
 }
 
 #Preview {
-    FloatingDockView()
+  FloatingDockView()
 }
