@@ -256,7 +256,6 @@ struct SettingsView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }
-        .padding(.top, 8)
 
         // General section
         SettingsSection(title: "General") {
@@ -362,7 +361,7 @@ struct SettingsView: View {
         .padding(.bottom, 20)
       }
     }
-    .frame(maxWidth: 450, minHeight: 500, maxHeight: 700)
+    .frame(maxWidth: 450, minHeight: 700, maxHeight: 700)
     .scenePadding()
   }
 }

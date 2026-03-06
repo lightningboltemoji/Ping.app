@@ -14,7 +14,15 @@ struct AccessibilityView: View {
     VStack {
       if !AccessibilityView.hasAxPermission() {
         VStack {
-          Text("ping").font(.custom("Chango", size: 60))
+            VStack(spacing: 24) {
+              // Header
+              VStack(spacing: 4) {
+                Text("ping").font(.custom("Chango", size: 48))
+                Text("Never miss a notification")
+                  .font(.subheadline)
+                  .foregroundStyle(.secondary)
+              }
+            }
 
           Text(
             "Accessbility permissions are required"
