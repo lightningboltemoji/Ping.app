@@ -81,6 +81,7 @@ class GlowController {
   init(state: AppState, screen: NSScreen?) {
     self.state = state
     self.screen = screen
+    handleConfigChange(state.activeGlowConfigs)
     observeConfigs()
     observePreview()
   }
