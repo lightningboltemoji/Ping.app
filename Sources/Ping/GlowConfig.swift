@@ -9,6 +9,7 @@ struct GlowConfig: Equatable {
   let color: NSColor
   let size: Double
   let opacity: Double
+  let position: GlowPosition
 
   static func == (lhs: GlowConfig, rhs: GlowConfig) -> Bool {
     guard let a = lhs.color.usingColorSpace(.sRGB),
@@ -20,5 +21,6 @@ struct GlowConfig: Equatable {
       && abs(a.alphaComponent - b.alphaComponent) < 0.01
       && abs(lhs.size - rhs.size) < 0.01
       && abs(lhs.opacity - rhs.opacity) < 0.01
+      && lhs.position == rhs.position
   }
 }

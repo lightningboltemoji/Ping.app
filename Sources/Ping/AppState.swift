@@ -13,7 +13,7 @@ struct AppSettings: Codable, Equatable, Identifiable {
   var id = UUID()
   var name: String
   var color: String
-  var position: GlowPosition = .top
+  var position: GlowPosition = .bottom
   var size: Double = 0.5
   var opacity: Double = 0.9
   var colorOption: ColorOptions = .basic
@@ -52,7 +52,8 @@ class AppState {
 
   static func resolvedConfig(for app: AppSettings, badge: String) -> GlowConfig {
     GlowConfig(
-      color: resolvedColor(for: app, badge: badge), size: app.size, opacity: app.opacity)
+      color: resolvedColor(for: app, badge: badge), size: app.size, opacity: app.opacity,
+      position: app.position)
   }
 
   var launchOnStartup = true

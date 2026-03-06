@@ -10,6 +10,7 @@ import QuartzCore
 
 class GlowView: NSView, @preconcurrency CAAnimationDelegate {
   private var glowLayer: CAGradientLayer!
+  let position: GlowPosition
 
   private var rotator = GlowConfigRotator()
   private var previewConfig: GlowConfig?
@@ -32,13 +33,15 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
   private let fadeDuration: CFTimeInterval = 2.0
   private let crossfadeDuration: CFTimeInterval = 0.4
 
-  override init(frame frameRect: NSRect) {
+  init(frame frameRect: NSRect, position: GlowPosition) {
+    self.position = position
     super.init(frame: frameRect)
     setupGlowEffect()
     updateAvailableConfigs([])
   }
 
   required init?(coder: NSCoder) {
+    self.position = .bottom
     super.init(coder: coder)
     setupGlowEffect()
   }
@@ -122,12 +125,27 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
     ]
   }
 
+  private func gradientPoints(for position: GlowPosition, size: Double) -> (CGPoint, CGPoint) {
+    let s = CGFloat(size)
+    switch position {
+    case .bottom:
+      return (CGPoint(x: 0.5, y: 0), CGPoint(x: 0.8 + s / 5, y: 0.5 + s / 2))
+    case .top:
+      return (CGPoint(x: 0.5, y: 1.0), CGPoint(x: 0.8 + s / 5, y: 0.5 - s / 2))
+    case .left:
+      return (CGPoint(x: 0, y: 0.5), CGPoint(x: 0.5 + s / 2, y: 0.8 + s / 5))
+    case .right:
+      return (CGPoint(x: 1.0, y: 0.5), CGPoint(x: 0.5 - s / 2, y: 0.8 + s / 5))
+    }
+  }
+
   private func applyConfig(_ config: GlowConfig) {
     opacityMultiplier = Float(config.opacity)
     glowLayer.colors = gradientColors(for: config.color)
-    let s = CGFloat(config.size)
     glowLayer.locations = [0.0, 0.85, 1.0]
-    glowLayer.endPoint = CGPoint(x: 0.8 + s / 5, y: 0.5 + s / 2)
+    let (start, end) = gradientPoints(for: position, size: config.size)
+    glowLayer.startPoint = start
+    glowLayer.endPoint = end
   }
 
   // MARK: - Setup
@@ -139,8 +157,9 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
     glowLayer.frame = self.bounds
     glowLayer.type = .radial
 
-    glowLayer.startPoint = CGPoint(x: 0.5, y: 0)
-    glowLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
+    let (start, end) = gradientPoints(for: position, size: 0.5)
+    glowLayer.startPoint = start
+    glowLayer.endPoint = end
 
     glowLayer.opacity = minOpacity
     self.layer?.addSublayer(glowLayer)

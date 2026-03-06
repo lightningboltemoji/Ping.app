@@ -12,19 +12,36 @@ import SwiftUI
 class GlowWindow: NSWindow {
 
   private var glowView: GlowView!
+  let position: GlowPosition
 
   init(
     screen: NSScreen,
-    width: Double,
-    height: Double,
+    position: GlowPosition,
+    depth: Double = 0.25,
   ) {
-    let height = screen.frame.height * height as CGFloat
-    let windowRect = NSRect(
-      x: (screen.frame.width - screen.frame.width * width) / 2 as CGFloat,
-      y: -height,
-      width: screen.frame.width * width,
-      height: height * 2
-    )
+    self.position = position
+    let sf = screen.frame
+    let depthPx = sf.height * CGFloat(depth)
+
+    let windowRect: NSRect
+    switch position {
+    case .bottom:
+      windowRect = NSRect(
+        x: sf.minX, y: sf.minY - depthPx,
+        width: sf.width, height: depthPx * 2)
+    case .top:
+      windowRect = NSRect(
+        x: sf.minX, y: sf.maxY - depthPx,
+        width: sf.width, height: depthPx * 2)
+    case .left:
+      windowRect = NSRect(
+        x: sf.minX - depthPx, y: sf.minY,
+        width: depthPx * 2, height: sf.height)
+    case .right:
+      windowRect = NSRect(
+        x: sf.maxX - depthPx, y: sf.minY,
+        width: depthPx * 2, height: sf.height)
+    }
 
     super.init(
       contentRect: windowRect,
@@ -33,15 +50,13 @@ class GlowWindow: NSWindow {
       defer: false
     )
 
-    // Make window transparent and allow it to appear above other windows
     self.backgroundColor = NSColor.clear
     self.isOpaque = false
     self.hasShadow = false
     self.level = NSWindow.Level.floating
-    self.ignoresMouseEvents = true  // Allow clicks to pass through
+    self.ignoresMouseEvents = true
 
-    // Create and set the glow view
-    glowView = GlowView(frame: windowRect)
+    glowView = GlowView(frame: windowRect, position: position)
     self.contentView = glowView
   }
 

@@ -19,15 +19,7 @@ struct PingApp: App {
     let state = AppState()
     self.state = state
     self.dockPoller = DockPoller(state: state)
-
-    var glowWindow: GlowWindow?
-    if let screen = NSScreen.main {
-      glowWindow = GlowWindow(
-        screen: screen, width: 1, height: 0.25
-      )
-      glowWindow?.hideGlow()
-    }
-    self.glowController = GlowController(state: state, glowWindow: glowWindow)
+    self.glowController = GlowController(state: state, screen: NSScreen.main)
   }
 
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -76,13 +68,23 @@ struct PingApp: App {
 @MainActor
 class GlowController {
   private let state: AppState
-  private let glowWindow: GlowWindow?
+  private let screen: NSScreen?
+  private var windows: [GlowPosition: GlowWindow] = [:]
 
-  init(state: AppState, glowWindow: GlowWindow?) {
+  init(state: AppState, screen: NSScreen?) {
     self.state = state
-    self.glowWindow = glowWindow
+    self.screen = screen
     observeConfigs()
     observePreview()
+  }
+
+  private func window(for position: GlowPosition) -> GlowWindow? {
+    if let existing = windows[position] { return existing }
+    guard let screen = screen else { return nil }
+    let w = GlowWindow(screen: screen, position: position)
+    w.hideGlow()
+    windows[position] = w
+    return w
   }
 
   private func observeConfigs() {
@@ -102,13 +104,22 @@ class GlowController {
     } onChange: {
       Task { @MainActor in
         if let config = self.state.previewGlowConfig {
-          self.glowWindow?.setPreviewConfig(config)
-          self.glowWindow?.showGlow()
+          let w = self.window(for: config.position)
+          w?.setPreviewConfig(config)
+          w?.showGlow()
+          // Clear preview on other windows
+          for (pos, win) in self.windows where pos != config.position {
+            win.clearPreview()
+            if self.state.activeGlowConfigs.filter({ $0.position == pos }).isEmpty {
+              win.hideGlow()
+            }
+          }
         } else {
-          self.glowWindow?.clearPreview()
-          // If no active configs, hide after preview ends
-          if self.state.activeGlowConfigs.isEmpty {
-            self.glowWindow?.hideGlow()
+          for (pos, win) in self.windows {
+            win.clearPreview()
+            if self.state.activeGlowConfigs.filter({ $0.position == pos }).isEmpty {
+              win.hideGlow()
+            }
           }
         }
         self.observePreview()
@@ -117,12 +128,19 @@ class GlowController {
   }
 
   private func handleConfigChange(_ configs: [GlowConfig]) {
-    if configs.isEmpty {
-      glowWindow?.hideGlow()
-      return
+    let grouped = Dictionary(grouping: configs, by: { $0.position })
+
+    // Update each position that has configs
+    for (position, posConfigs) in grouped {
+      let w = window(for: position)
+      w?.updateConfigs(posConfigs)
+      w?.showGlow()
     }
 
-    glowWindow?.updateConfigs(configs)
-    glowWindow?.showGlow()
+    // Hide windows for positions with no configs
+    for (position, win) in windows where grouped[position] == nil {
+      win.updateConfigs([])
+      win.hideGlow()
+    }
   }
 }
