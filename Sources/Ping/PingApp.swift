@@ -14,12 +14,19 @@ struct PingApp: App {
   private let state: AppState
   private let dockPoller: DockPoller
   private let glowController: GlowController
+  private let settingsAutoSaver: SettingsAutoSaver
 
   init() {
     let state = AppState()
+    if let saved = SettingsPersistence.load() {
+      state.launchOnStartup = saved.launchOnStartup
+      state.refreshInterval = saved.refreshInterval
+      state.apps = saved.apps
+    }
     self.state = state
     self.dockPoller = DockPoller(state: state)
     self.glowController = GlowController(state: state, screen: NSScreen.main)
+    self.settingsAutoSaver = SettingsAutoSaver(state: state)
   }
 
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
