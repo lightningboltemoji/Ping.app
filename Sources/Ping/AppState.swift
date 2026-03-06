@@ -10,7 +10,7 @@ struct AppSettings: Codable, Equatable, Identifiable {
   var name: String
   var color: String
   var position: GlowPosition = .top
-  var size: Double = 0.25
+  var size: Double = 0.5
   var opacity: Double = 0.9
   var usePerTypeColors: Bool = false
   var numericColor: String = "Green"

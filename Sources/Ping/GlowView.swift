@@ -123,7 +123,7 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
     glowLayer.colors = gradientColors(for: config.color)
     let s = CGFloat(config.size)
     glowLayer.locations = [0.0, 0.85, 1.0]
-    glowLayer.endPoint = CGPoint(x: 0.5 + s / 2, y: 0.5 + s / 2)
+    glowLayer.endPoint = CGPoint(x: 0.8 + s / 5, y: 0.5 + s / 2)
   }
 
   // MARK: - Setup

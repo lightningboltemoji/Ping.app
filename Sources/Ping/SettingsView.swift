@@ -140,7 +140,7 @@ struct AppCardView: View {
       HStack(spacing: 8) {
         Text("Size")
           .foregroundStyle(.secondary)
-        Slider(value: $app.size, in: 0.05...1.0, step: 0.05)
+        Slider(value: $app.size, in: 0.25...1.0, step: 0.05)
         Text("\(Int(app.size * 100))%")
           .monospacedDigit()
           .frame(width: 40, alignment: .trailing)
@@ -154,7 +154,7 @@ struct AppCardView: View {
       HStack(spacing: 8) {
         Text("Opacity")
           .foregroundStyle(.secondary)
-        Slider(value: $app.opacity, in: 0.1...1.0, step: 0.05)
+        Slider(value: $app.opacity, in: 0.4...1.0, step: 0.05)
         Text("\(Int(app.opacity * 100))%")
           .monospacedDigit()
           .frame(width: 40, alignment: .trailing)
