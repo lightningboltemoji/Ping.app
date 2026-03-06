@@ -6,23 +6,29 @@
 //
 
 @preconcurrency import ApplicationServices
+internal import Combine
 import SwiftUI
 
 struct AccessibilityView: View {
 
+  @State private var hasPermission = AXIsProcessTrusted()
+  @Environment(\.dismiss) private var dismiss
+
+  private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
   var body: some View {
     VStack {
-      if !AccessibilityView.hasAxPermission() {
+      if !hasPermission {
         VStack {
-            VStack(spacing: 24) {
-              // Header
-              VStack(spacing: 4) {
-                Text("ping").font(.custom("Chango", size: 48))
-                Text("Never miss a notification")
-                  .font(.subheadline)
-                  .foregroundStyle(.secondary)
-              }
+          VStack(spacing: 24) {
+            // Header
+            VStack(spacing: 4) {
+              Text("ping").font(.custom("Chango", size: 48))
+              Text("Never miss a notification")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
+          }
 
           Text(
             "Accessbility permissions are required"
@@ -54,6 +60,12 @@ struct AccessibilityView: View {
         }
       } else {
         EmptyView().frame(width: 0, height: 0).hidden()
+      }
+    }
+    .onReceive(timer) { _ in
+      hasPermission = AXIsProcessTrusted()
+      if hasPermission {
+        dismiss()
       }
     }
   }
