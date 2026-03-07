@@ -50,14 +50,115 @@ struct SettingsSection<Content: View>: View {
 }
 
 @available(macOS 26, *)
+struct GlowAppearanceControls: View {
+  @Binding var appearance: GlowAppearance
+
+  var body: some View {
+    // Position row
+    HStack {
+      Text("Position")
+        .foregroundStyle(.secondary)
+      Spacer()
+      Picker("Position", selection: $appearance.position) {
+        ForEach(GlowPosition.allCases, id: \.self) { pos in
+          Text(pos.rawValue.capitalized).tag(pos)
+        }
+      }
+      .pickerStyle(.segmented)
+      .frame(width: 220)
+      .labelsHidden()
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
+
+    Divider().padding(.leading, 12)
+
+    // Size row
+    HStack(spacing: 8) {
+      Text("Size")
+        .foregroundStyle(.secondary)
+      Slider(value: $appearance.size, in: 0.25...1.0, step: 0.05)
+      Text("\(Int(appearance.size * 100))%")
+        .monospacedDigit()
+        .frame(width: 40, alignment: .trailing)
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
+
+    Divider().padding(.leading, 12)
+
+    // Opacity row
+    HStack(spacing: 8) {
+      Text("Opacity")
+        .foregroundStyle(.secondary)
+      Slider(value: $appearance.opacity, in: 0.4...1.0, step: 0.05)
+      Text("\(Int(appearance.opacity * 100))%")
+        .monospacedDigit()
+        .frame(width: 40, alignment: .trailing)
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
+
+    Divider().padding(.leading, 12)
+
+    // Color row
+    HStack(spacing: 8) {
+      Text("Color")
+        .foregroundStyle(.secondary)
+      Spacer()
+      Picker("Color", selection: $appearance.color) {
+        ForEach(AppState.colorPalette, id: \.name) { entry in
+          HStack {
+            Circle()
+              .fill(Color(nsColor: entry.color))
+              .frame(width: 10, height: 10)
+            Text(entry.name)
+          }
+          .tag(entry.name)
+        }
+      }
+      .labelsHidden()
+      .frame(width: 140)
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
+  }
+}
+
+@available(macOS 26, *)
 struct AppCardView: View {
   @Binding var app: AppSettings
   let dockAppNames: [String]
   let appIcons: [String: NSImage]
   let onDelete: () -> Void
-  let onHover: (Bool) -> Void
+  let onPreview: (GlowConfig?) -> Void
+
+  enum AdvancedTab: String, CaseIterable {
+    case numeric, nonNumeric
+
+    var label: String {
+      switch self {
+      case .numeric: "Numeric"
+      case .nonNumeric: "Non-numeric"
+      }
+    }
+  }
 
   @State private var isHovering = false
+  @State private var advancedTab: AdvancedTab = .numeric
+
+  private func updatePreview() {
+    guard isHovering else {
+      onPreview(nil)
+      return
+    }
+    if app.glowSettings.settingsMode == .advanced {
+      let badge = advancedTab == .nonNumeric ? "" : "1"
+      onPreview(AppState.resolvedConfig(for: app, badge: badge))
+    } else {
+      onPreview(AppState.resolvedConfig(for: app, badge: ""))
+    }
+  }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -65,11 +166,11 @@ struct AppCardView: View {
       HStack(spacing: 8) {
         if let icon = appIcons[app.name] {
           Image(nsImage: icon).resizable()
-            .frame(width: 22, height: 22).padding(1)
+            .frame(width: 28, height: 28).padding(1)
         } else {
           Circle()
             .fill(Color(nsColor: AppState.resolvedColor(for: app, badge: "")))
-            .frame(width: 16, height: 16)
+            .frame(width: 22, height: 22)
             .padding(4)
         }
         Menu {
@@ -94,6 +195,7 @@ struct AppCardView: View {
           }
         }
         .menuStyle(.borderlessButton)
+        .padding(.vertical, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
 
         Spacer()
@@ -109,80 +211,14 @@ struct AppCardView: View {
 
       Divider().padding(.leading, 12)
 
-      // Position row
+      // Effect picker row
       HStack {
-        Text("Position")
+        Text("Effect")
           .foregroundStyle(.secondary)
         Spacer()
-        Picker("Position", selection: $app.position) {
-          ForEach(GlowPosition.allCases, id: \.self) { pos in
-            Text(pos.rawValue.capitalized).tag(pos)
-          }
-        }
-        .pickerStyle(.segmented)
-        .frame(width: 220)
-        .labelsHidden()
-      }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
-
-      Divider().padding(.leading, 12)
-
-      // Size row
-      HStack(spacing: 8) {
-        Text("Size")
-          .foregroundStyle(.secondary)
-        Slider(value: $app.size, in: 0.25...1.0, step: 0.05)
-        Text("\(Int(app.size * 100))%")
-          .monospacedDigit()
-          .frame(width: 40, alignment: .trailing)
-      }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
-
-      Divider().padding(.leading, 12)
-
-      // Opacity row
-      HStack(spacing: 8) {
-        Text("Opacity")
-          .foregroundStyle(.secondary)
-        Slider(value: $app.opacity, in: 0.4...1.0, step: 0.05)
-        Text("\(Int(app.opacity * 100))%")
-          .monospacedDigit()
-          .frame(width: 40, alignment: .trailing)
-      }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
-
-      Divider().padding(.leading, 12)
-
-      HStack(spacing: 8) {
-        Text("Colors")
-          .foregroundStyle(.secondary)
-
-        Spacer()
-
-        if app.colorOption == .basic {
-          Picker("Color", selection: $app.color) {
-            ForEach(AppState.colorPalette, id: \.name) { entry in
-              HStack {
-                Circle()
-                  .fill(Color(nsColor: entry.color))
-                  .frame(width: 10, height: 10)
-                Text(entry.name)
-              }
-              .tag(entry.name)
-            }
-          }
-          .labelsHidden()
-          .frame(width: 140)
-        }
-
-        Spacer()
-
-        Picker("Color option", selection: $app.colorOption) {
-          ForEach(ColorOptions.allCases, id: \.self) { co in
-            Text(co.rawValue.capitalized).tag(co)
+        Picker("Effect", selection: $app.effect) {
+          ForEach(Effect.allCases, id: \.self) { effect in
+            Text(effect.label).tag(effect)
           }
         }
         .pickerStyle(.segmented)
@@ -191,35 +227,58 @@ struct AppCardView: View {
       .padding(.horizontal, 12)
       .padding(.vertical, 8)
 
-      if app.colorOption == .advanced {
+      if app.effect == .glow {
+        Divider().padding(.leading, 12)
+
         HStack(spacing: 8) {
-          Picker("Numeric", selection: $app.color) {
-            ForEach(AppState.colorPalette, id: \.name) { entry in
-              HStack {
-                Circle()
-                  .fill(Color(nsColor: entry.color))
-                  .frame(width: 10, height: 10)
-                Text(entry.name)
+          if app.glowSettings.settingsMode == .advanced {
+            Picker("Badge type", selection: $advancedTab) {
+              ForEach(AdvancedTab.allCases, id: \.self) { tab in
+                Text(tab.label).tag(tab)
               }
-              .tag(entry.name)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .onChange(of: advancedTab) {
+              updatePreview()
             }
           }
-          .labelsVisibility(app.colorOption == .advanced ? .visible : .hidden)
-          .frame(width: 140)
 
-          Picker("Non-numeric", selection: $app.nonNumericColor) {
-            ForEach(AppState.colorPalette, id: \.name) { entry in
-              HStack {
-                Circle()
-                  .fill(Color(nsColor: entry.color))
-                  .frame(width: 10, height: 10)
-                Text(entry.name)
-              }
-              .tag(entry.name)
-            }
-          }
-          .frame(width: 180)
+          Spacer()
+
+          Toggle(
+            "Advanced",
+            isOn: Binding(
+              get: { app.glowSettings.settingsMode == .advanced },
+              set: { app.glowSettings.settingsMode = $0 ? .advanced : .basic }
+            )
+          )
+          .toggleStyle(.switch)
+          .controlSize(.mini)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+
+        Divider().padding(.leading, 12)
+
+        GlowAppearanceControls(
+          appearance: app.glowSettings.settingsMode == .advanced
+            && advancedTab == .nonNumeric
+            ? $app.glowSettings.nonNumeric
+            : $app.glowSettings.normal
+        )
+      }
+
+      if app.effect == .floatingDock {
+        Divider().padding(.leading, 12)
+
+        HStack {
+          Toggle(isOn: $app.floatingDockSettings.showAppName) {
+            Text("Show app name")
+          }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
       }
 
       Spacer()
@@ -229,11 +288,11 @@ struct AppCardView: View {
     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     .onHover { hovering in
       isHovering = hovering
-      onHover(hovering)
+      updatePreview()
     }
     .onChange(of: app) {
       if isHovering {
-        onHover(true)
+        updatePreview()
       }
     }
   }
@@ -302,7 +361,7 @@ struct SettingsView: View {
         Spacer()
         Button {
           withAnimation(.easeInOut(duration: 0.2)) {
-            state.apps.append(AppSettings(name: "", color: "Green"))
+            state.apps.append(AppSettings(name: ""))
           }
         } label: {
           Image(systemName: "plus.circle.fill")
@@ -345,13 +404,8 @@ struct SettingsView: View {
                     state.apps.removeAll { $0.id == id }
                   }
                 },
-                onHover: { hovering in
-                  if hovering {
-                    state.previewGlowConfig = AppState.resolvedConfig(
-                      for: app, badge: "")
-                  } else {
-                    state.previewGlowConfig = nil
-                  }
+                onPreview: { config in
+                  state.previewGlowConfig = config
                 }
               )
             }

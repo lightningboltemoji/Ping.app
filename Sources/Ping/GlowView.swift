@@ -129,13 +129,13 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
     let s = CGFloat(size)
     switch position {
     case .bottom:
-      return (CGPoint(x: 0.5, y: 0), CGPoint(x: 0.8 + s / 5, y: 0.5 + s / 2))
+      return (CGPoint(x: 0.5, y: -0.4), CGPoint(x: 0.8 + s / 5, y: 0.5 + s / 2))
     case .top:
-      return (CGPoint(x: 0.5, y: 1.0), CGPoint(x: 0.8 + s / 5, y: 0.5 - s / 2))
+      return (CGPoint(x: 0.5, y: 1.4), CGPoint(x: 0.8 + s / 5, y: 0.5 - s / 2))
     case .left:
-      return (CGPoint(x: 0, y: 0.5), CGPoint(x: 0.5 + s / 2, y: 0.8 + s / 5))
+      return (CGPoint(x: -0.4, y: 0.5), CGPoint(x: 0.5 + s / 2, y: 0.8 + s / 5))
     case .right:
-      return (CGPoint(x: 1.0, y: 0.5), CGPoint(x: 0.5 - s / 2, y: 0.8 + s / 5))
+      return (CGPoint(x: 1.4, y: 0.5), CGPoint(x: 0.5 - s / 2, y: 0.8 + s / 5))
     }
   }
 
@@ -143,6 +143,7 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
     opacityMultiplier = Float(config.opacity)
     glowLayer.colors = gradientColors(for: config.color)
     glowLayer.locations = [0.0, 0.85, 1.0]
+    // glowLayer.locations = [0.7, 0.7, 0.7]
     let (start, end) = gradientPoints(for: position, size: config.size)
     glowLayer.startPoint = start
     glowLayer.endPoint = end

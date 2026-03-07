@@ -9,16 +9,41 @@ enum ColorOptions: String, Codable, CaseIterable {
   case basic, advanced
 }
 
-struct AppSettings: Codable, Equatable, Identifiable {
-  var id = UUID()
-  var name: String
-  var color: String
+enum Effect: String, Codable, CaseIterable {
+  case glow
+  case floatingDock
+
+  var label: String {
+    switch self {
+    case .glow: "Glow"
+    case .floatingDock: "Floating Dock"
+    }
+  }
+}
+
+struct GlowAppearance: Codable, Equatable {
   var position: GlowPosition = .bottom
   var size: Double = 1.0
   var opacity: Double = 1.0
-  var colorOption: ColorOptions = .basic
-  var numericColor: String = "Green"
-  var nonNumericColor: String = "Green"
+  var color: String = "Green"
+}
+
+struct GlowSettings: Codable, Equatable {
+  var settingsMode: ColorOptions = .basic
+  var normal: GlowAppearance = GlowAppearance()
+  var nonNumeric: GlowAppearance = GlowAppearance()
+}
+
+struct FloatingDockSettings: Codable, Equatable {
+  var showAppName: Bool = true
+}
+
+struct AppSettings: Codable, Equatable, Identifiable {
+  var id = UUID()
+  var name: String
+  var effect: Effect = .glow
+  var glowSettings: GlowSettings = GlowSettings()
+  var floatingDockSettings: FloatingDockSettings = FloatingDockSettings()
 }
 
 @Observable
@@ -40,20 +65,25 @@ class AppState {
       ?? NSColor(red: 0.0, green: 0.8, blue: 0.2, alpha: 0.9)
   }
 
-  static func resolvedColor(for app: AppSettings, badge: String) -> NSColor {
-    let name: String
-    if app.colorOption == .advanced {
-      name = !badge.isEmpty ? app.numericColor : app.nonNumericColor
-    } else {
-      name = app.color
+  static func resolvedAppearance(for app: AppSettings, badge: String) -> GlowAppearance {
+    let glow = app.glowSettings
+    if glow.settingsMode == .advanced && badge.isEmpty {
+      return glow.nonNumeric
     }
-    return nsColor(forName: name).withAlphaComponent(app.opacity)
+    return glow.normal
+  }
+
+  static func resolvedColor(for app: AppSettings, badge: String) -> NSColor {
+    let appearance = resolvedAppearance(for: app, badge: badge)
+    return nsColor(forName: appearance.color).withAlphaComponent(appearance.opacity)
   }
 
   static func resolvedConfig(for app: AppSettings, badge: String) -> GlowConfig {
-    GlowConfig(
-      color: resolvedColor(for: app, badge: badge), size: app.size, opacity: app.opacity,
-      position: app.position)
+    let appearance = resolvedAppearance(for: app, badge: badge)
+    return GlowConfig(
+      color: nsColor(forName: appearance.color).withAlphaComponent(appearance.opacity),
+      size: appearance.size, opacity: appearance.opacity,
+      position: appearance.position)
   }
 
   var launchOnStartup = true

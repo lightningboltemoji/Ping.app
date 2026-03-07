@@ -10,6 +10,11 @@ internal import Combine
 import Foundation
 import SwiftUI
 
+private struct BadgeOverride: Decodable {
+  let appName: String
+  let badge: String
+}
+
 @MainActor
 class DockPoller {
 
@@ -53,6 +58,16 @@ class DockPoller {
     start()
   }
 
+  private static let badgeOverrides: [String: String]? = {
+    guard let json = ProcessInfo.processInfo.environment["BADGES"],
+      let data = json.data(using: .utf8),
+      let entries = try? JSONDecoder().decode([BadgeOverride].self, from: data)
+    else { return nil }
+    var dict: [String: String] = [:]
+    for entry in entries { dict[entry.appName] = entry.badge }
+    return dict
+  }()
+
   func poll() {
     let dockItems = DockItem.list()
 
@@ -73,7 +88,9 @@ class DockPoller {
     // Check configured apps for badges
     var configs: [GlowConfig] = []
     for app in state.apps {
-      if let dockItem = dockItems.first(where: { $0.title == app.name }) {
+      if let overrideBadge = Self.badgeOverrides?[app.name] {
+        configs.append(AppState.resolvedConfig(for: app, badge: overrideBadge))
+      } else if let dockItem = dockItems.first(where: { $0.title == app.name }) {
         if let badge = dockItem.badgeCount() {
           configs.append(AppState.resolvedConfig(for: app, badge: badge))
         }

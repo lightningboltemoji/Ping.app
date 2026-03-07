@@ -27,20 +27,20 @@ class GlowWindow: NSWindow {
     switch position {
     case .bottom:
       windowRect = NSRect(
-        x: sf.minX, y: sf.minY - depthPx,
-        width: sf.width, height: depthPx * 2)
+        x: sf.minX, y: sf.minY,
+        width: sf.width, height: depthPx)
     case .top:
       windowRect = NSRect(
         x: sf.minX, y: sf.maxY - depthPx,
-        width: sf.width, height: depthPx * 2)
+        width: sf.width, height: depthPx)
     case .left:
       windowRect = NSRect(
-        x: sf.minX - depthPx, y: sf.minY,
-        width: depthPx * 2, height: sf.height)
+        x: sf.minX, y: sf.minY,
+        width: depthPx, height: sf.height)
     case .right:
       windowRect = NSRect(
         x: sf.maxX - depthPx, y: sf.minY,
-        width: depthPx * 2, height: sf.height)
+        width: depthPx, height: sf.height)
     }
 
     super.init(

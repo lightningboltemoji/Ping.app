@@ -1,37 +1,95 @@
 import Foundation
 import Yams
 
-struct PersistedApp: Codable {
-  var name: String
-  var color: String
+struct PersistedGlowAppearance: Codable {
   var position: GlowPosition
   var size: Double
   var opacity: Double
-  var color_option: String
-  var numeric_color: String
-  var non_numeric_color: String
+  var color: String
+
+  init(from appearance: GlowAppearance) {
+    position = appearance.position
+    size = appearance.size
+    opacity = appearance.opacity
+    color = appearance.color
+  }
+
+  func toGlowAppearance() -> GlowAppearance {
+    GlowAppearance(position: position, size: size, opacity: opacity, color: color)
+  }
+}
+
+struct PersistedGlowSettings: Codable {
+  var settings_mode: String
+  var position: GlowPosition
+  var size: Double
+  var opacity: Double
+  var color: String
+  var non_numeric: PersistedGlowAppearance?
+
+  // Legacy fields for backward compatibility
+  var color_option: String?
+  var non_numeric_color: String?
+
+  init(from glow: GlowSettings) {
+    settings_mode = glow.settingsMode.rawValue
+    position = glow.normal.position
+    size = glow.normal.size
+    opacity = glow.normal.opacity
+    color = glow.normal.color
+    non_numeric = PersistedGlowAppearance(from: glow.nonNumeric)
+  }
+
+  func toGlowSettings() -> GlowSettings {
+    let mode =
+      ColorOptions(rawValue: settings_mode)
+      ?? ColorOptions(rawValue: color_option ?? "") ?? .basic
+    let normal = GlowAppearance(position: position, size: size, opacity: opacity, color: color)
+    let nonNumeric: GlowAppearance
+    if let nn = non_numeric {
+      nonNumeric = nn.toGlowAppearance()
+    } else {
+      // Legacy migration: use non_numeric_color if present, otherwise copy normal
+      nonNumeric = GlowAppearance(
+        position: position, size: size, opacity: opacity,
+        color: non_numeric_color ?? color)
+    }
+    return GlowSettings(settingsMode: mode, normal: normal, nonNumeric: nonNumeric)
+  }
+}
+
+struct PersistedFloatingDockSettings: Codable {
+  var show_app_name: Bool
+
+  init(from settings: FloatingDockSettings) {
+    show_app_name = settings.showAppName
+  }
+
+  func toFloatingDockSettings() -> FloatingDockSettings {
+    FloatingDockSettings(showAppName: show_app_name)
+  }
+}
+
+struct PersistedApp: Codable {
+  var name: String
+  var effect: String
+  var glow_settings: PersistedGlowSettings?
+  var floating_dock_settings: PersistedFloatingDockSettings?
 
   init(from app: AppSettings) {
     name = app.name
-    color = app.color
-    position = app.position
-    size = app.size
-    opacity = app.opacity
-    color_option = app.colorOption.rawValue
-    numeric_color = app.numericColor
-    non_numeric_color = app.nonNumericColor
+    effect = app.effect.rawValue
+    glow_settings = PersistedGlowSettings(from: app.glowSettings)
+    floating_dock_settings = PersistedFloatingDockSettings(from: app.floatingDockSettings)
   }
 
   func toAppSettings() -> AppSettings {
     AppSettings(
       name: name,
-      color: color,
-      position: position,
-      size: size,
-      opacity: opacity,
-      colorOption: ColorOptions(rawValue: color_option) ?? .basic,
-      numericColor: numeric_color,
-      nonNumericColor: non_numeric_color
+      effect: Effect(rawValue: effect) ?? .glow,
+      glowSettings: glow_settings?.toGlowSettings() ?? GlowSettings(),
+      floatingDockSettings: floating_dock_settings?.toFloatingDockSettings()
+        ?? FloatingDockSettings()
     )
   }
 }
