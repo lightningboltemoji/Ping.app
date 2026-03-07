@@ -18,6 +18,8 @@
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>26.0</string>
+    <key>CFBundleIconFile</key>
+    <string>Ping</string>
     <key>LSUIElement</key>
     <true/>
 </dict>

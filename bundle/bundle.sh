@@ -22,12 +22,16 @@ rm -rf "$APP"
 
 # Create directory structure
 mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/Resources"
 
 # Copy binary
 cp "$BINARY" "$APP/Contents/MacOS/Ping"
 
 # Copy Info.plist
 cp Info.plist "$APP/Contents/Info.plist"
+
+# Copy app icon
+cp Ping.icns "$APP/Contents/Resources/Ping.icns"
 
 # Write PkgInfo
 echo -n "APPL????" > "$APP/Contents/PkgInfo"
