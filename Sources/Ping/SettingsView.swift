@@ -107,14 +107,14 @@ struct GlowAppearanceControls: View {
         .foregroundStyle(.secondary)
       Spacer()
       Picker("Color", selection: $appearance.color) {
-        ForEach(AppState.colorPalette, id: \.name) { entry in
+        ForEach(GlowColor.allCases, id: \.self) { glowColor in
           HStack {
             Circle()
-              .fill(Color(nsColor: entry.color))
+              .fill(Color(nsColor: glowColor.nsColor))
               .frame(width: 10, height: 10)
-            Text(entry.name)
+            Text(glowColor.rawValue)
           }
-          .tag(entry.name)
+          .tag(glowColor)
         }
       }
       .labelsHidden()

@@ -10,20 +10,15 @@ let package = Package(
   ],
   dependencies: [
     .package(
-      url: "https://github.com/apple/swift-atomics.git",
-      .upToNextMajor(from: "1.3.0")
-    ),
-    .package(
       url: "https://github.com/jpsim/Yams.git",
       from: "5.0.0"
-    ),
+    )
   ],
   targets: [
     .executableTarget(
       name: "Ping",
       dependencies: [
-        .product(name: "Atomics", package: "swift-atomics"),
-        .product(name: "Yams", package: "Yams"),
+        .product(name: "Yams", package: "Yams")
       ],
       resources: [
         .process("Resources/Chango-Regular.ttf")

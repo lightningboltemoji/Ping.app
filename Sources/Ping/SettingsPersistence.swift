@@ -1,108 +1,24 @@
 import Foundation
 import Yams
+import os
 
-struct PersistedGlowAppearance: Codable {
-  var position: GlowPosition
-  var size: Double
-  var opacity: Double
-  var color: String
+private let logger = Logger(subsystem: "Ping", category: "settings")
 
-  init(from appearance: GlowAppearance) {
-    position = appearance.position
-    size = appearance.size
-    opacity = appearance.opacity
-    color = appearance.color
+struct SettingsFile: Codable {
+  var launchOnStartup: Bool
+  var refreshInterval: Double
+  var apps: [AppSettings]
+
+  enum CodingKeys: String, CodingKey {
+    case launchOnStartup = "launch_on_startup"
+    case refreshInterval = "refresh_interval"
+    case apps
   }
 
-  func toGlowAppearance() -> GlowAppearance {
-    GlowAppearance(position: position, size: size, opacity: opacity, color: color)
-  }
-}
-
-struct PersistedGlowSettings: Codable {
-  var settings_mode: String
-  var position: GlowPosition
-  var size: Double
-  var opacity: Double
-  var color: String
-  var non_numeric: PersistedGlowAppearance?
-
-  // Legacy fields for backward compatibility
-  var color_option: String?
-  var non_numeric_color: String?
-
-  init(from glow: GlowSettings) {
-    settings_mode = glow.settingsMode.rawValue
-    position = glow.normal.position
-    size = glow.normal.size
-    opacity = glow.normal.opacity
-    color = glow.normal.color
-    non_numeric = PersistedGlowAppearance(from: glow.nonNumeric)
-  }
-
-  func toGlowSettings() -> GlowSettings {
-    let mode =
-      ColorOptions(rawValue: settings_mode)
-      ?? ColorOptions(rawValue: color_option ?? "") ?? .basic
-    let normal = GlowAppearance(position: position, size: size, opacity: opacity, color: color)
-    let nonNumeric: GlowAppearance
-    if let nn = non_numeric {
-      nonNumeric = nn.toGlowAppearance()
-    } else {
-      // Legacy migration: use non_numeric_color if present, otherwise copy normal
-      nonNumeric = GlowAppearance(
-        position: position, size: size, opacity: opacity,
-        color: non_numeric_color ?? color)
-    }
-    return GlowSettings(settingsMode: mode, normal: normal, nonNumeric: nonNumeric)
-  }
-}
-
-struct PersistedFloatingDockSettings: Codable {
-  var show_app_name: Bool
-
-  init(from settings: FloatingDockSettings) {
-    show_app_name = settings.showAppName
-  }
-
-  func toFloatingDockSettings() -> FloatingDockSettings {
-    FloatingDockSettings(showAppName: show_app_name)
-  }
-}
-
-struct PersistedApp: Codable {
-  var name: String
-  var effect: String
-  var glow_settings: PersistedGlowSettings?
-  var floating_dock_settings: PersistedFloatingDockSettings?
-
-  init(from app: AppSettings) {
-    name = app.name
-    effect = app.effect.rawValue
-    glow_settings = PersistedGlowSettings(from: app.glowSettings)
-    floating_dock_settings = PersistedFloatingDockSettings(from: app.floatingDockSettings)
-  }
-
-  func toAppSettings() -> AppSettings {
-    AppSettings(
-      name: name,
-      effect: Effect(rawValue: effect) ?? .glow,
-      glowSettings: glow_settings?.toGlowSettings() ?? GlowSettings(),
-      floatingDockSettings: floating_dock_settings?.toFloatingDockSettings()
-        ?? FloatingDockSettings()
-    )
-  }
-}
-
-struct PersistedSettings: Codable {
-  var launch_on_startup: Bool
-  var refresh_interval: Double
-  var apps: [PersistedApp]
-
-  init(from state: AppState) {
-    launch_on_startup = state.launchOnStartup
-    refresh_interval = state.refreshInterval
-    apps = state.apps.map { PersistedApp(from: $0) }
+  init(state: AppState) {
+    launchOnStartup = state.launchOnStartup
+    refreshInterval = state.refreshInterval
+    apps = state.apps
   }
 }
 
@@ -113,15 +29,15 @@ enum SettingsPersistence {
   }
 
   static func save(state: AppState) {
-    let persisted = PersistedSettings(from: state)
+    let settings = SettingsFile(state: state)
     do {
       let encoder = YAMLEncoder()
-      let yaml = try encoder.encode(persisted)
+      let yaml = try encoder.encode(settings)
       let dir = configFile.deletingLastPathComponent()
       try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
       try yaml.write(to: configFile, atomically: true, encoding: .utf8)
     } catch {
-      print("Failed to save settings: \(error)")
+      logger.error("Failed to save settings: \(error)")
     }
   }
 
@@ -130,14 +46,14 @@ enum SettingsPersistence {
     do {
       let yaml = try String(contentsOf: configFile, encoding: .utf8)
       let decoder = YAMLDecoder()
-      let persisted = try decoder.decode(PersistedSettings.self, from: yaml)
+      let settings = try decoder.decode(SettingsFile.self, from: yaml)
       return (
-        launchOnStartup: persisted.launch_on_startup,
-        refreshInterval: persisted.refresh_interval,
-        apps: persisted.apps.map { $0.toAppSettings() }
+        launchOnStartup: settings.launchOnStartup,
+        refreshInterval: settings.refreshInterval,
+        apps: settings.apps
       )
     } catch {
-      print("Failed to load settings: \(error)")
+      logger.error("Failed to load settings: \(error)")
       return nil
     }
   }

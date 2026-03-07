@@ -1,14 +1,8 @@
-//
-//  DockPoller.swift
-//  Ping
-//
-//  Created by Tanner on 9/16/25.
-//
-
-import Atomics
-internal import Combine
 import Foundation
 import SwiftUI
+import os
+
+private let logger = Logger(subsystem: "Ping", category: "polling")
 
 private struct BadgeOverride: Decodable {
   let appName: String
@@ -19,43 +13,16 @@ private struct BadgeOverride: Decodable {
 class DockPoller {
 
   private let state: AppState
-  private var pollingTimer: Timer?
+  private var pollingTask: Task<Void, Never>?
 
   init(state: AppState) {
     self.state = state
-    self.start()
-    self.observe()
-  }
-
-  private func observe() {
-    withObservationTracking {
-      _ = state.refreshInterval
-    } onChange: {
-      Task { @MainActor in
-        print("Interval changed: \(self.state.refreshInterval)")
-        self.setInterval(interval: self.state.refreshInterval)
-        self.observe()
+    pollingTask = Task {
+      while !Task.isCancelled {
+        self.poll()
+        try? await Task.sleep(for: .seconds(self.state.refreshInterval))
       }
     }
-  }
-
-  func start() {
-    self.poll()
-    self.pollingTimer = Timer.scheduledTimer(
-      withTimeInterval: state.refreshInterval,
-      repeats: true,
-    ) { _ in
-      self.poll()
-    }
-  }
-
-  func stop() {
-    pollingTimer?.invalidate()
-  }
-
-  func setInterval(interval: TimeInterval) {
-    stop()
-    start()
   }
 
   private static let badgeOverrides: [String: String]? = {
@@ -68,16 +35,14 @@ class DockPoller {
     return dict
   }()
 
-  func poll() {
+  private func poll() {
     let dockItems = DockItem.list()
 
-    // Update dock app names for the settings picker
     let names = dockItems.compactMap { $0.title }.sorted()
     if names != state.dockAppNames {
       state.dockAppNames = names
     }
 
-    // Load icons for any app not yet cached
     for item in dockItems {
       guard state.appIcons[item.title] == nil, let url = item.appURL else { continue }
       let icon = NSWorkspace.shared.icon(forFile: url.path)
@@ -85,7 +50,6 @@ class DockPoller {
       state.appIcons[item.title] = icon
     }
 
-    // Check configured apps for badges
     var configs: [GlowConfig] = []
     for app in state.apps {
       if let overrideBadge = Self.badgeOverrides?[app.name] {

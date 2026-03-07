@@ -8,6 +8,9 @@
 @preconcurrency import ApplicationServices
 internal import Combine
 import SwiftUI
+import os
+
+private let logger = Logger(subsystem: "Ping", category: "accessibility")
 
 struct AccessibilityView: View {
 
@@ -78,7 +81,7 @@ struct AccessibilityView: View {
     let options = [
       kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true
     ]
-    print(AXIsProcessTrustedWithOptions(options as CFDictionary))
+    logger.info("AXIsProcessTrusted: \(AXIsProcessTrustedWithOptions(options as CFDictionary))")
   }
 
   private static func openSettings() {
