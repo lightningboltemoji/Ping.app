@@ -1,8 +1,10 @@
-# Ping.app
+# Ping.app <img width="24" alt="Bell icon" src="/bundle/Bell.svg"/>
 
-Reads what **items in your dock have a red badge** and **makes it more obvious**. 
+_Makes notifications more obvious with subtle, persistent effects_ 
 
-Below shows the Messages app configured to glow green and the Mail app to glow blue.
+Works by reading what items in your dock **have a red badge** and **adds screen overlays** to draw attention.
+
+For example, with the Messages app set to glow green, and the Mail app set to glow blue:
 
 <img width="600" alt="Video of the plugin clearing an unsent message from the chatbox" src="/.github/preview.webp"/>
 
@@ -10,9 +12,11 @@ Below shows the Messages app configured to glow green and the Mail app to glow b
 
 Apps must be configured before they'll be highlighted by Ping. For each app, you can set:
 
-- What color is displayed (optionally can be different numeric and non-numeric badge content)
+- What color is displayed (optionally, can be different numeric and non-numeric badges)
 - What position the glow is from (top, bottom, left, right)
 - How intense the glow is
+
+When using the settings UI, changes are written to `~/.config/ping/settings.yaml` for easy backup and portability.
 
 ## Aspirations
 
