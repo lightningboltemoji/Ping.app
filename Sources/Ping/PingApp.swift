@@ -15,6 +15,7 @@ struct PingApp: App {
   private let state: AppState
   private let dockPoller: DockPoller
   private let glowController: GlowController
+  private let floatingDockController: FloatingDockController
   private let settingsAutoSaver: SettingsAutoSaver
 
   init() {
@@ -27,6 +28,7 @@ struct PingApp: App {
     self.state = state
     self.dockPoller = DockPoller(state: state)
     self.glowController = GlowController(state: state, screen: NSScreen.main)
+    self.floatingDockController = FloatingDockController(state: state)
     self.settingsAutoSaver = SettingsAutoSaver(state: state)
   }
 

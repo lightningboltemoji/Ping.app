@@ -144,6 +144,13 @@ struct AppSettings: Codable, Equatable, Identifiable {
   }
 }
 
+struct FloatingDockItem: Equatable {
+  var appName: String
+  var badge: String
+  var icon: NSImage?
+  var showAppName: Bool
+}
+
 @Observable
 class AppState {
 
@@ -175,6 +182,8 @@ class AppState {
   var appIcons: [String: NSImage] = [:]
   var activeGlowConfigs: [GlowConfig] = []
   var previewGlowConfig: GlowConfig? = nil
+  var activeFloatingDockApps: [FloatingDockItem] = []
+  var previewFloatingDock: Bool = false
   var snoozedUntil: Date? = nil
 
   var isSnoozed: Bool {

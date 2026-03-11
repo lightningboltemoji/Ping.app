@@ -51,16 +51,34 @@ class DockPoller {
     }
 
     var configs: [GlowConfig] = []
+    var floatingDockItems: [FloatingDockItem] = []
     for app in state.apps {
+      let badge: String?
       if let overrideBadge = Self.badgeOverrides?[app.name] {
-        configs.append(AppState.resolvedConfig(for: app, badge: overrideBadge))
+        badge = overrideBadge
       } else if let dockItem = dockItems.first(where: { $0.title == app.name }) {
-        if let badge = dockItem.badgeCount() {
-          configs.append(AppState.resolvedConfig(for: app, badge: badge))
-        }
+        badge = dockItem.badgeCount()
+      } else {
+        badge = nil
+      }
+
+      guard let badge else { continue }
+
+      switch app.effect {
+      case .glow:
+        configs.append(AppState.resolvedConfig(for: app, badge: badge))
+      case .floatingDock:
+        floatingDockItems.append(
+          FloatingDockItem(
+            appName: app.name,
+            badge: badge,
+            icon: state.appIcons[app.name],
+            showAppName: app.floatingDockSettings.showAppName
+          ))
       }
     }
 
     state.activeGlowConfigs = configs
+    state.activeFloatingDockApps = floatingDockItems
   }
 }

@@ -133,6 +133,7 @@ struct AppCardView: View {
   let appIcons: [String: NSImage]
   let onDelete: () -> Void
   let onPreview: (GlowConfig?) -> Void
+  let onFloatingDockPreview: (Bool) -> Void
 
   enum AdvancedTab: String, CaseIterable {
     case numeric, nonNumeric
@@ -151,13 +152,21 @@ struct AppCardView: View {
   private func updatePreview() {
     guard isHovering else {
       onPreview(nil)
+      onFloatingDockPreview(false)
       return
     }
-    if app.glowSettings.settingsMode == .advanced {
-      let badge = advancedTab == .nonNumeric ? "" : "1"
-      onPreview(AppState.resolvedConfig(for: app, badge: badge))
-    } else {
-      onPreview(AppState.resolvedConfig(for: app, badge: ""))
+    switch app.effect {
+    case .glow:
+      onFloatingDockPreview(false)
+      if app.glowSettings.settingsMode == .advanced {
+        let badge = advancedTab == .nonNumeric ? "" : "1"
+        onPreview(AppState.resolvedConfig(for: app, badge: badge))
+      } else {
+        onPreview(AppState.resolvedConfig(for: app, badge: ""))
+      }
+    case .floatingDock:
+      onPreview(nil)
+      onFloatingDockPreview(true)
     }
   }
 
@@ -441,6 +450,23 @@ struct SettingsView: View {
                 },
                 onPreview: { config in
                   state.previewGlowConfig = config
+                },
+                onFloatingDockPreview: { show in
+                  if show {
+                    state.activeFloatingDockApps = [
+                      FloatingDockItem(
+                        appName: app.name.isEmpty ? "App" : app.name,
+                        badge: "1",
+                        icon: state.appIcons[app.name],
+                        showAppName: app.floatingDockSettings.showAppName
+                      )
+                    ]
+                  }
+                  state.previewFloatingDock = show
+                  if !show {
+                    // Restore actual state on next poll; clear preview items
+                    state.activeFloatingDockApps = []
+                  }
                 }
               )
             }
