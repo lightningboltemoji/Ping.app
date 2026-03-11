@@ -453,7 +453,7 @@ struct SettingsView: View {
                 },
                 onFloatingDockPreview: { show in
                   if show {
-                    state.activeFloatingDockApps = [
+                    state.previewFloatingDockApps = [
                       FloatingDockItem(
                         appName: app.name.isEmpty ? "App" : app.name,
                         badge: "1",
@@ -461,11 +461,8 @@ struct SettingsView: View {
                         showAppName: app.floatingDockSettings.showAppName
                       )
                     ]
-                  }
-                  state.previewFloatingDock = show
-                  if !show {
-                    // Restore actual state on next poll; clear preview items
-                    state.activeFloatingDockApps = []
+                  } else {
+                    state.previewFloatingDockApps = []
                   }
                 }
               )

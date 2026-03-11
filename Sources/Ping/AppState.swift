@@ -183,7 +183,7 @@ class AppState {
   var activeGlowConfigs: [GlowConfig] = []
   var previewGlowConfig: GlowConfig? = nil
   var activeFloatingDockApps: [FloatingDockItem] = []
-  var previewFloatingDock: Bool = false
+  var previewFloatingDockApps: [FloatingDockItem] = []
   var snoozedUntil: Date? = nil
 
   var isSnoozed: Bool {

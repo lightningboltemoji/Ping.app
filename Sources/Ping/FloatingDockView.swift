@@ -5,7 +5,9 @@ struct FloatingDockView: View {
   @Environment(AppState.self) private var state
 
   var body: some View {
-    let items = state.activeFloatingDockApps
+    let items =
+      state.previewFloatingDockApps.isEmpty
+      ? state.activeFloatingDockApps : state.previewFloatingDockApps
     if !items.isEmpty {
       HStack(spacing: 12) {
         ForEach(Array(items.enumerated()), id: \.offset) { _, item in
@@ -32,6 +34,7 @@ struct FloatingDockView: View {
       .padding(.horizontal, 16)
       .padding(.vertical, 10)
       .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+      .opacity(0.8)
     }
   }
 }

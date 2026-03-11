@@ -33,7 +33,7 @@ class FloatingDockController {
 
   private func observePreview() {
     withObservationTracking {
-      _ = state.previewFloatingDock
+      _ = state.previewFloatingDockApps
     } onChange: {
       Task { @MainActor in
         self.updateVisibility()
@@ -56,7 +56,7 @@ class FloatingDockController {
   private func updateVisibility() {
     let shouldShow =
       !state.isSnoozed
-      && (!state.activeFloatingDockApps.isEmpty || state.previewFloatingDock)
+      && (!state.activeFloatingDockApps.isEmpty || !state.previewFloatingDockApps.isEmpty)
 
     if shouldShow {
       let w = ensureWindow()

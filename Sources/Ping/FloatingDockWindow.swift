@@ -5,7 +5,7 @@ class FloatingDockWindow: NSWindow {
     super.init(
       contentRect: NSRect(
         x: screen.origin.x,
-        y: screen.maxY - 70,
+        y: screen.maxY - 170,
         width: screen.width,
         height: 70
       ),
