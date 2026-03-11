@@ -1,37 +1,28 @@
 import SwiftUI
 
 class FloatingDockWindow: NSWindow {
+
+  static func windowFrame(
+    position: DockPosition, margin: Double, screen: NSRect
+  ) -> NSRect {
+    let windowHeight: CGFloat = 80
+    let y: CGFloat
+    switch position {
+    case .topLeft, .topCenter, .topRight:
+      y = screen.maxY - margin - windowHeight
+    case .bottomLeft, .bottomCenter, .bottomRight:
+      y = screen.origin.y + margin
+    }
+    return NSRect(x: screen.origin.x, y: y, width: screen.width, height: windowHeight)
+  }
+
   init(state: AppState, screen: NSRect) {
     let settings = state.floatingDockSettings
-    let windowWidth = screen.width
-    let windowHeight: CGFloat = 80
-
-    let x: CGFloat
-    let y: CGFloat
-
-    switch settings.position {
-    case .topLeft:
-      x = screen.origin.x
-      y = screen.maxY - settings.margin - windowHeight
-    case .topCenter:
-      x = screen.origin.x
-      y = screen.maxY - settings.margin - windowHeight
-    case .topRight:
-      x = screen.origin.x
-      y = screen.maxY - settings.margin - windowHeight
-    case .bottomLeft:
-      x = screen.origin.x
-      y = screen.origin.y + settings.margin
-    case .bottomCenter:
-      x = screen.origin.x
-      y = screen.origin.y + settings.margin
-    case .bottomRight:
-      x = screen.origin.x
-      y = screen.origin.y + settings.margin
-    }
+    let frame = Self.windowFrame(
+      position: settings.position, margin: settings.margin, screen: screen)
 
     super.init(
-      contentRect: NSRect(x: x, y: y, width: windowWidth, height: windowHeight),
+      contentRect: frame,
       styleMask: [.borderless],
       backing: .buffered,
       defer: true
@@ -53,7 +44,6 @@ class FloatingDockWindow: NSWindow {
 
     let view = FloatingDockView()
       .frame(maxWidth: .infinity, alignment: alignment)
-      .padding(.horizontal, settings.margin)
       .environment(state)
     self.contentView = NSHostingView(rootView: view)
   }

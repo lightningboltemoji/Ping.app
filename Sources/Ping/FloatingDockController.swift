@@ -4,9 +4,13 @@ import SwiftUI
 class FloatingDockController {
   private let state: AppState
   private var window: FloatingDockWindow?
+  private var lastPosition: DockPosition
+  private var lastMargin: Double
 
   init(state: AppState) {
     self.state = state
+    self.lastPosition = state.floatingDockSettings.position
+    self.lastMargin = state.floatingDockSettings.margin
     observeApps()
     observePreview()
     observeSnooze()
@@ -21,6 +25,17 @@ class FloatingDockController {
       let w = ensureWindow()
       w.orderFrontRegardless()
     }
+  }
+
+  private func repositionWindow() {
+    guard let window else { return }
+    let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+    let frame = FloatingDockWindow.windowFrame(
+      position: state.floatingDockSettings.position,
+      margin: state.floatingDockSettings.margin,
+      screen: screen
+    )
+    window.setFrame(frame, display: true)
   }
 
   private func ensureWindow() -> FloatingDockWindow {
@@ -69,7 +84,17 @@ class FloatingDockController {
       _ = state.floatingDockSettings
     } onChange: {
       Task { @MainActor in
-        self.recreateWindow()
+        let settings = self.state.floatingDockSettings
+        if settings.position != self.lastPosition {
+          self.lastPosition = settings.position
+          self.lastMargin = settings.margin
+          self.recreateWindow()
+        } else if settings.margin != self.lastMargin {
+          self.lastMargin = settings.margin
+          self.repositionWindow()
+        }
+        // All other changes (opacity, iconSize, padding, backgroundColor,
+        // showAppNames) are handled reactively by the SwiftUI view.
         self.observeSettings()
       }
     }
