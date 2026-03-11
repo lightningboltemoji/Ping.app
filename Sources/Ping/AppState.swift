@@ -144,6 +144,7 @@ struct FloatingDockSettings: Codable, Equatable {
   var margin: Double = 20
   var padding: Double = 16
   var showAppNames: Bool = true
+  var showBadges: Bool = true
   var backgroundColor: GlowColor = .white
 
   enum CodingKeys: String, CodingKey {
@@ -153,6 +154,7 @@ struct FloatingDockSettings: Codable, Equatable {
     case margin
     case padding
     case showAppNames = "show_app_names"
+    case showBadges = "show_badges"
     case backgroundColor = "background_color"
   }
 }

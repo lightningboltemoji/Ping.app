@@ -491,6 +491,17 @@ struct SettingsView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+
+        Divider().padding(.leading, 12)
+
+        // Show badges
+        HStack {
+          Toggle(isOn: $state.floatingDockSettings.showBadges) {
+            Text("Show badges")
+          }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 12)
@@ -571,7 +582,7 @@ struct SettingsView: View {
         .padding(.bottom, 20)
       }
     }
-    .frame(maxWidth: 450, minHeight: 700, maxHeight: 700)
+    .frame(maxWidth: 450, minHeight: 900, maxHeight: 900)
     .scenePadding()
   }
 }
