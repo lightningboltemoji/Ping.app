@@ -77,7 +77,7 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
       displayedConfig = rotator.currentConfig
       if let config = displayedConfig {
         applyConfig(config)
-        startFadeIn()
+        startFadeIn(entering: true)
       }
       return
     }
@@ -96,7 +96,7 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
     previewConfig = config
     displayedConfig = config
     applyConfig(config)
-    startFadeIn()
+    startFadeIn(entering: true)
   }
 
   /// End preview and resume normal cycling.
@@ -168,14 +168,14 @@ class GlowView: NSView, @preconcurrency CAAnimationDelegate {
 
   // MARK: - Animation
 
-  private func startFadeIn() {
+  private func startFadeIn(entering: Bool = false) {
     phase = .fadeIn
     glowLayer?.removeAllAnimations()
 
     glowLayer.opacity = maxOpacity
 
     let anim = CABasicAnimation(keyPath: "opacity")
-    anim.fromValue = minOpacity
+    anim.fromValue = entering ? 0 : minOpacity
     anim.toValue = maxOpacity
     anim.duration = fadeDuration
     anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
