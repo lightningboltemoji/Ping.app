@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 SOURCE="./Ping.png"
 ICONSET="Ping.iconset"
-ICNS="Ping.icns"
+ICNS="../.app/Contents/Resources/Ping.icns"
 
 if [ ! -f "$SOURCE" ]; then
     echo "Error: $SOURCE not found"
@@ -28,12 +28,3 @@ rm -rf "$ICONSET"
 
 echo "Built $ICNS"
 
-SVG="./Bell.svg"
-RESOURCES="../Sources/Ping/Resources"
-
-if [ -f "$SVG" ]; then
-    cp "$SVG" "$RESOURCES/Bell.svg"
-    echo "Copied Bell.svg"
-else
-    echo "Warning: $SVG not found, skipping menu bar icon"
-fi
