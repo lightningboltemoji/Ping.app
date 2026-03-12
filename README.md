@@ -1,4 +1,4 @@
-# Ping.app <img width="24" alt="Bell icon" src="/bundle/Bell.svg"/>
+# Ping.app <img width="24" alt="Bell icon" src="/Sources/Ping/Resources/Bell.svg"/>
 
 _Makes notifications more obvious with subtle, persistent effects_ 
 
