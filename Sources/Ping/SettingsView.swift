@@ -744,52 +744,27 @@ struct AppsSettingsView: View {
 struct SettingsView: View {
 
   @Environment(AppState.self) private var state
-  @State private var selectedTab: SettingsTab = .general
+  @State private var selectedTab: SettingsTab? = .general
 
   var body: some View {
-    HStack(spacing: 0) {
-      // Sidebar
-      VStack(alignment: .leading, spacing: 2) {
-        ForEach(SettingsTab.allCases) { tab in
-          Button {
-            selectedTab = tab
-          } label: {
-            Label(tab.label, systemImage: tab.icon)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(.vertical, 6)
-              .padding(.horizontal, 8)
-              .background(
-                selectedTab == tab
-                  ? Color.accentColor.opacity(0.2)
-                  : Color.clear
-              )
-              .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-          }
-          .buttonStyle(.plain)
-          .foregroundStyle(selectedTab == tab ? .primary : .secondary)
-        }
-        Spacer()
+    NavigationSplitView {
+      List(SettingsTab.allCases, selection: $selectedTab) { tab in
+        Label(tab.label, systemImage: tab.icon)
+          .tag(tab)
       }
-      .padding(12)
-      .frame(width: 180)
-      .background(.background)
-
-      Divider()
-
-      // Detail
-      Group {
-        switch selectedTab {
-        case .general:
-          GeneralSettingsView()
-        case .line:
-          LineSettingsView()
-        case .floatingDock:
-          FloatingDockSettingsView()
-        case .apps:
-          AppsSettingsView()
-        }
+      .navigationSplitViewColumnWidth(min: 180, ideal: 180, max: 180)
+      .navigationTitle("Settings")
+    } detail: {
+      switch selectedTab {
+      case .general, nil:
+        GeneralSettingsView()
+      case .line:
+        LineSettingsView()
+      case .floatingDock:
+        FloatingDockSettingsView()
+      case .apps:
+        AppsSettingsView()
       }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(width: 650, height: 600)
   }

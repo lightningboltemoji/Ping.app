@@ -46,19 +46,7 @@ struct PingApp: App {
     .windowResizability(.contentSize)
 
     MenuBarExtra {
-      Text("ping").font(.custom("Chango", size: 13))
-      Divider()
-      AcknowledgeMenuContent(state: state)
-      Divider()
-      SnoozeMenuContent(state: state)
-      Divider()
-      SettingsLink {
-        Text("Settings")
-      }
-      Button("Quit") {
-        NSApplication.shared.terminate(nil)
-      }
-      .keyboardShortcut("q", modifiers: .command)
+      MenuBarMenuContent(state: state)
     } label: {
       let image: NSImage = {
         guard
@@ -74,7 +62,7 @@ struct PingApp: App {
       Image(nsImage: image)
     }
 
-    Settings {
+    Window("Settings", id: "settings") {
       SettingsView().onAppear {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
@@ -84,6 +72,7 @@ struct PingApp: App {
       }
     }
     .environment(state)
+    .windowStyle(.hiddenTitleBar)
     .windowResizability(.contentSize)
   }
 }
@@ -101,6 +90,28 @@ struct AcknowledgeMenuContent: View {
       let names = state.acknowledgedBadges.keys.sorted().joined(separator: ", ")
       Text("Suppressed: \(names)")
     }
+  }
+}
+
+@available(macOS 26, *)
+struct MenuBarMenuContent: View {
+  let state: AppState
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some View {
+    Text("ping").font(.custom("Chango", size: 13))
+    Divider()
+    AcknowledgeMenuContent(state: state)
+    Divider()
+    SnoozeMenuContent(state: state)
+    Divider()
+    Button("Settings") {
+      openWindow(id: "settings")
+    }
+    Button("Quit") {
+      NSApplication.shared.terminate(nil)
+    }
+    .keyboardShortcut("q", modifiers: .command)
   }
 }
 
