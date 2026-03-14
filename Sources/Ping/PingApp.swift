@@ -26,12 +26,13 @@ struct PingApp: App {
       state.apps = saved.apps
       state.lineSettings = saved.lineSettings
       state.floatingDockSettings = saved.floatingDockSettings
+      state.monitorMode = saved.monitorMode
     }
     state.launchOnStartup = SMAppService.mainApp.status == .enabled
     self.state = state
     self.dockPoller = DockPoller(state: state)
-    self.glowController = GlowController(state: state, screen: NSScreen.main)
-    self.lineController = LineController(state: state, screen: NSScreen.main)
+    self.glowController = GlowController(state: state)
+    self.lineController = LineController(state: state)
     self.floatingDockController = FloatingDockController(state: state)
     self.settingsAutoSaver = SettingsAutoSaver(state: state)
   }

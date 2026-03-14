@@ -1,8 +1,30 @@
 import AppKit
 import SwiftUI
 
+enum MonitorMode: String, Codable, CaseIterable {
+  case mainMonitor, allMonitors
+
+  var label: String {
+    switch self {
+    case .mainMonitor: "Main monitor"
+    case .allMonitors: "All monitors"
+    }
+  }
+}
+
 enum GlowPosition: String, Codable, CaseIterable {
   case top, bottom, left, right
+}
+
+struct ScreenPositionKey: Hashable {
+  let displayID: CGDirectDisplayID
+  let position: GlowPosition
+}
+
+extension NSScreen {
+  var displayID: CGDirectDisplayID {
+    (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID) ?? 0
+  }
 }
 
 enum ColorOptions: String, Codable, CaseIterable {
@@ -220,6 +242,7 @@ class AppState {
       position: lineSettings.position)
   }
 
+  var monitorMode: MonitorMode = .mainMonitor
   var launchOnStartup = false
   var refreshInterval = 0.5
   var apps: [AppSettings] = []

@@ -3,26 +3,71 @@ import SwiftUI
 @MainActor
 class LineController {
   private let state: AppState
-  private let screen: NSScreen?
-  private var windows: [GlowPosition: LineWindow] = [:]
+  private var windows: [ScreenPositionKey: LineWindow] = [:]
+  nonisolated(unsafe) private var screenObserver: NSObjectProtocol?
 
-  init(state: AppState, screen: NSScreen?) {
+  init(state: AppState) {
     self.state = state
-    self.screen = screen
     handleConfigChange(state.activeLineConfigs)
     observeConfigs()
     observeLineSettings()
     observePreview()
     observeSnooze()
+    observeMonitorMode()
+    screenObserver = NotificationCenter.default.addObserver(
+      forName: NSApplication.didChangeScreenParametersNotification,
+      object: nil, queue: .main
+    ) { [weak self] _ in
+      Task { @MainActor in
+        self?.handleScreenChange()
+      }
+    }
   }
 
-  private func window(for position: GlowPosition) -> LineWindow? {
-    if let existing = windows[position] { return existing }
-    guard let screen = screen else { return nil }
+  deinit {
+    if let screenObserver {
+      NotificationCenter.default.removeObserver(screenObserver)
+    }
+  }
+
+  private var targetScreens: [NSScreen] {
+    switch state.monitorMode {
+    case .mainMonitor: [NSScreen.main].compactMap { $0 }
+    case .allMonitors: NSScreen.screens
+    }
+  }
+
+  private func window(for position: GlowPosition, on screen: NSScreen) -> LineWindow {
+    let key = ScreenPositionKey(displayID: screen.displayID, position: position)
+    if let existing = windows[key] { return existing }
     let w = LineWindow(screen: screen, position: position)
     w.hideLine()
-    windows[position] = w
+    windows[key] = w
     return w
+  }
+
+  private func handleScreenChange() {
+    closeAllWindows()
+    handleConfigChange(state.activeLineConfigs)
+  }
+
+  private func closeAllWindows() {
+    for (_, win) in windows {
+      win.orderOut(nil)
+    }
+    windows.removeAll()
+  }
+
+  private func observeMonitorMode() {
+    withObservationTracking {
+      _ = state.monitorMode
+    } onChange: {
+      Task { @MainActor in
+        self.closeAllWindows()
+        self.handleConfigChange(self.state.activeLineConfigs)
+        self.observeMonitorMode()
+      }
+    }
   }
 
   private func observeConfigs() {
@@ -63,23 +108,26 @@ class LineController {
     } onChange: {
       Task { @MainActor in
         let configs = self.state.previewLineConfigs
+        let screens = [NSScreen.main].compactMap { $0 }
         if !configs.isEmpty {
           let grouped = Dictionary(grouping: configs, by: { $0.position })
-          for (position, posConfigs) in grouped {
-            let w = self.window(for: position)
-            w?.setPreviewConfigs(posConfigs)
-            w?.showLine()
+          for screen in screens {
+            for (position, posConfigs) in grouped {
+              let w = self.window(for: position, on: screen)
+              w.setPreviewConfigs(posConfigs)
+              w.showLine()
+            }
           }
-          for (pos, win) in self.windows where grouped[pos] == nil {
+          for (key, win) in self.windows where grouped[key.position] == nil {
             win.clearPreview()
-            if self.state.activeLineConfigs.filter({ $0.position == pos }).isEmpty {
+            if self.state.activeLineConfigs.filter({ $0.position == key.position }).isEmpty {
               win.hideLine()
             }
           }
         } else {
-          for (pos, win) in self.windows {
+          for (key, win) in self.windows {
             win.clearPreview()
-            if self.state.activeLineConfigs.filter({ $0.position == pos }).isEmpty {
+            if self.state.activeLineConfigs.filter({ $0.position == key.position }).isEmpty {
               win.hideLine()
             }
           }
@@ -110,14 +158,19 @@ class LineController {
     }
 
     let grouped = Dictionary(grouping: configs, by: { $0.position })
+    var activeKeys = Set<ScreenPositionKey>()
 
-    for (position, posConfigs) in grouped {
-      let w = window(for: position)
-      w?.updateConfigs(posConfigs)
-      w?.showLine()
+    for screen in targetScreens {
+      for (position, posConfigs) in grouped {
+        let key = ScreenPositionKey(displayID: screen.displayID, position: position)
+        activeKeys.insert(key)
+        let w = window(for: position, on: screen)
+        w.updateConfigs(posConfigs)
+        w.showLine()
+      }
     }
 
-    for (position, win) in windows where grouped[position] == nil {
+    for (key, win) in windows where !activeKeys.contains(key) {
       win.updateConfigs([])
       win.hideLine()
     }

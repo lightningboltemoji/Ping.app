@@ -10,6 +10,7 @@ struct SettingsFile: Codable {
   var apps: [AppSettings]
   var lineSettings: LineSettings
   var floatingDockSettings: FloatingDockSettings
+  var monitorMode: MonitorMode
 
   enum CodingKeys: String, CodingKey {
     case launchOnStartup = "launch_on_startup"
@@ -17,6 +18,7 @@ struct SettingsFile: Codable {
     case apps
     case lineSettings = "line_settings"
     case floatingDockSettings = "floating_dock_settings"
+    case monitorMode = "monitor_mode"
   }
 
   init(state: AppState) {
@@ -25,6 +27,7 @@ struct SettingsFile: Codable {
     apps = state.apps
     lineSettings = state.lineSettings
     floatingDockSettings = state.floatingDockSettings
+    monitorMode = state.monitorMode
   }
 
   init(from decoder: Decoder) throws {
@@ -38,6 +41,9 @@ struct SettingsFile: Codable {
     floatingDockSettings =
       try container.decodeIfPresent(FloatingDockSettings.self, forKey: .floatingDockSettings)
       ?? FloatingDockSettings()
+    monitorMode =
+      try container.decodeIfPresent(MonitorMode.self, forKey: .monitorMode)
+      ?? .mainMonitor
   }
 }
 
@@ -62,7 +68,8 @@ enum SettingsPersistence {
 
   static func load() -> (
     launchOnStartup: Bool, refreshInterval: Double, apps: [AppSettings],
-    lineSettings: LineSettings, floatingDockSettings: FloatingDockSettings
+    lineSettings: LineSettings, floatingDockSettings: FloatingDockSettings,
+    monitorMode: MonitorMode
   )? {
     guard FileManager.default.fileExists(atPath: configFile.path) else { return nil }
     do {
@@ -74,7 +81,8 @@ enum SettingsPersistence {
         refreshInterval: settings.refreshInterval,
         apps: settings.apps,
         lineSettings: settings.lineSettings,
-        floatingDockSettings: settings.floatingDockSettings
+        floatingDockSettings: settings.floatingDockSettings,
+        monitorMode: settings.monitorMode
       )
     } catch {
       logger.error("Failed to load settings: \(error)")
@@ -100,6 +108,7 @@ class SettingsAutoSaver {
       _ = state.apps
       _ = state.lineSettings
       _ = state.floatingDockSettings
+      _ = state.monitorMode
     } onChange: {
       Task { @MainActor in
         self.scheduleSave()

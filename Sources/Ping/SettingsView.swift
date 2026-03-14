@@ -467,6 +467,20 @@ struct GeneralSettingsView: View {
           }
           .padding(.horizontal, 12)
           .padding(.vertical, 16)
+
+          Divider().padding(.leading, 12)
+
+          HStack {
+            Text("Show effects on")
+            Spacer()
+            Picker("", selection: $state.monitorMode) {
+              ForEach(MonitorMode.allCases, id: \.self) { Text($0.label) }
+            }
+            .labelsHidden()
+            .fixedSize()
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 16)
         }
       }
       .padding(20)

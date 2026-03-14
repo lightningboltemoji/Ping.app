@@ -3,9 +3,10 @@ import SwiftUI
 @MainActor
 class FloatingDockController {
   private let state: AppState
-  private var window: FloatingDockWindow?
+  private var windows: [CGDirectDisplayID: FloatingDockWindow] = [:]
   private var lastPosition: DockPosition
   private var lastMargin: Double
+  nonisolated(unsafe) private var screenObserver: NSObjectProtocol?
 
   init(state: AppState) {
     self.state = state
@@ -15,35 +16,79 @@ class FloatingDockController {
     observePreview()
     observeSnooze()
     observeSettings()
-  }
-
-  private func recreateWindow() {
-    let wasVisible = window?.isVisible ?? false
-    window?.orderOut(nil)
-    window = nil
-    if wasVisible {
-      let w = ensureWindow()
-      w.orderFrontRegardless()
+    observeMonitorMode()
+    screenObserver = NotificationCenter.default.addObserver(
+      forName: NSApplication.didChangeScreenParametersNotification,
+      object: nil, queue: .main
+    ) { [weak self] _ in
+      Task { @MainActor in
+        self?.handleScreenChange()
+      }
     }
   }
 
-  private func repositionWindow() {
-    guard let window else { return }
-    let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-    let frame = FloatingDockWindow.windowFrame(
-      position: state.floatingDockSettings.position,
-      margin: state.floatingDockSettings.margin,
-      screen: screen
-    )
-    window.setFrame(frame, display: true)
+  deinit {
+    if let screenObserver {
+      NotificationCenter.default.removeObserver(screenObserver)
+    }
   }
 
-  private func ensureWindow() -> FloatingDockWindow {
-    if let window { return window }
-    let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-    let w = FloatingDockWindow(state: state, screen: screenFrame)
-    window = w
+  private var targetScreens: [NSScreen] {
+    switch state.monitorMode {
+    case .mainMonitor: [NSScreen.main].compactMap { $0 }
+    case .allMonitors: NSScreen.screens
+    }
+  }
+
+  private func handleScreenChange() {
+    recreateWindows()
+  }
+
+  private func recreateWindows() {
+    let wasVisible = windows.values.contains { $0.isVisible }
+    for (_, win) in windows {
+      win.orderOut(nil)
+    }
+    windows.removeAll()
+    if wasVisible {
+      for screen in targetScreens {
+        let w = ensureWindow(for: screen)
+        w.orderFrontRegardless()
+      }
+    }
+  }
+
+  private func repositionWindows() {
+    for (displayID, win) in windows {
+      guard let screen = targetScreens.first(where: { $0.displayID == displayID }) else {
+        continue
+      }
+      let frame = FloatingDockWindow.windowFrame(
+        position: state.floatingDockSettings.position,
+        margin: state.floatingDockSettings.margin,
+        screen: screen.visibleFrame
+      )
+      win.setFrame(frame, display: true)
+    }
+  }
+
+  private func ensureWindow(for screen: NSScreen) -> FloatingDockWindow {
+    let displayID = screen.displayID
+    if let existing = windows[displayID] { return existing }
+    let w = FloatingDockWindow(state: state, screen: screen.visibleFrame)
+    windows[displayID] = w
     return w
+  }
+
+  private func observeMonitorMode() {
+    withObservationTracking {
+      _ = state.monitorMode
+    } onChange: {
+      Task { @MainActor in
+        self.recreateWindows()
+        self.observeMonitorMode()
+      }
+    }
   }
 
   private func observeApps() {
@@ -88,13 +133,11 @@ class FloatingDockController {
         if settings.position != self.lastPosition {
           self.lastPosition = settings.position
           self.lastMargin = settings.margin
-          self.recreateWindow()
+          self.recreateWindows()
         } else if settings.margin != self.lastMargin {
           self.lastMargin = settings.margin
-          self.repositionWindow()
+          self.repositionWindows()
         }
-        // All other changes (opacity, iconSize, padding, backgroundColor,
-        // showAppNames) are handled reactively by the SwiftUI view.
         self.observeSettings()
       }
     }
@@ -106,10 +149,23 @@ class FloatingDockController {
       && (!state.activeFloatingDockApps.isEmpty || !state.previewFloatingDockApps.isEmpty)
 
     if shouldShow {
-      let w = ensureWindow()
-      w.orderFrontRegardless()
+      let screens =
+        state.previewFloatingDockApps.isEmpty
+        ? targetScreens : [NSScreen.main].compactMap { $0 }
+      let targetDisplayIDs = Set(screens.map { $0.displayID })
+
+      for screen in screens {
+        let w = ensureWindow(for: screen)
+        w.orderFrontRegardless()
+      }
+
+      for (displayID, win) in windows where !targetDisplayIDs.contains(displayID) {
+        win.orderOut(nil)
+      }
     } else {
-      window?.orderOut(nil)
+      for (_, win) in windows {
+        win.orderOut(nil)
+      }
     }
   }
 }
