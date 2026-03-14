@@ -27,6 +27,7 @@ struct PingApp: App {
       state.lineSettings = saved.lineSettings
       state.floatingDockSettings = saved.floatingDockSettings
       state.monitorMode = saved.monitorMode
+      state.suppressWhileFocused = saved.suppressWhileFocused
     }
     state.launchOnStartup = SMAppService.mainApp.status == .enabled
     self.state = state

@@ -481,6 +481,21 @@ struct GeneralSettingsView: View {
           }
           .padding(.horizontal, 12)
           .padding(.vertical, 16)
+
+          Divider().padding(.leading, 12)
+
+          HStack {
+            Toggle(isOn: $state.suppressWhileFocused) {
+              VStack(alignment: .leading, spacing: 2) {
+                Text("Suppress effects for focused app")
+                Text("Hide effects when the notifying app is in the foreground")
+                  .font(.system(size: 11))
+                  .foregroundStyle(.tertiary)
+              }
+            }
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 16)
         }
       }
       .padding(20)

@@ -11,6 +11,7 @@ struct SettingsFile: Codable {
   var lineSettings: LineSettings
   var floatingDockSettings: FloatingDockSettings
   var monitorMode: MonitorMode
+  var suppressWhileFocused: Bool
 
   enum CodingKeys: String, CodingKey {
     case launchOnStartup = "launch_on_startup"
@@ -19,6 +20,7 @@ struct SettingsFile: Codable {
     case lineSettings = "line_settings"
     case floatingDockSettings = "floating_dock_settings"
     case monitorMode = "monitor_mode"
+    case suppressWhileFocused = "suppress_while_focused"
   }
 
   init(state: AppState) {
@@ -28,6 +30,7 @@ struct SettingsFile: Codable {
     lineSettings = state.lineSettings
     floatingDockSettings = state.floatingDockSettings
     monitorMode = state.monitorMode
+    suppressWhileFocused = state.suppressWhileFocused
   }
 
   init(from decoder: Decoder) throws {
@@ -44,6 +47,9 @@ struct SettingsFile: Codable {
     monitorMode =
       try container.decodeIfPresent(MonitorMode.self, forKey: .monitorMode)
       ?? .mainMonitor
+    suppressWhileFocused =
+      try container.decodeIfPresent(Bool.self, forKey: .suppressWhileFocused)
+      ?? false
   }
 }
 
@@ -69,7 +75,7 @@ enum SettingsPersistence {
   static func load() -> (
     launchOnStartup: Bool, refreshInterval: Double, apps: [AppSettings],
     lineSettings: LineSettings, floatingDockSettings: FloatingDockSettings,
-    monitorMode: MonitorMode
+    monitorMode: MonitorMode, suppressWhileFocused: Bool
   )? {
     guard FileManager.default.fileExists(atPath: configFile.path) else { return nil }
     do {
@@ -82,7 +88,8 @@ enum SettingsPersistence {
         apps: settings.apps,
         lineSettings: settings.lineSettings,
         floatingDockSettings: settings.floatingDockSettings,
-        monitorMode: settings.monitorMode
+        monitorMode: settings.monitorMode,
+        suppressWhileFocused: settings.suppressWhileFocused
       )
     } catch {
       logger.error("Failed to load settings: \(error)")
@@ -109,6 +116,7 @@ class SettingsAutoSaver {
       _ = state.lineSettings
       _ = state.floatingDockSettings
       _ = state.monitorMode
+      _ = state.suppressWhileFocused
     } onChange: {
       Task { @MainActor in
         self.scheduleSave()

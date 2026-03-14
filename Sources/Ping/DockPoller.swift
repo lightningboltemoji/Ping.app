@@ -31,6 +31,22 @@ class DockPoller {
       self.badgeOverrideEntries = nil
     }
 
+    NSWorkspace.shared.notificationCenter.addObserver(
+      forName: NSWorkspace.didActivateApplicationNotification,
+      object: nil, queue: .main
+    ) { [weak self] notification in
+      guard let self else { return }
+      let app =
+        notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+      Task { @MainActor in
+        self.state.frontmostAppName = app?.localizedName
+        if self.state.suppressWhileFocused {
+          self.rebuildEffectConfigs()
+        }
+      }
+    }
+    state.frontmostAppName = NSWorkspace.shared.frontmostApplication?.localizedName
+
     pollingTask = Task {
       while !Task.isCancelled {
         self.poll()
@@ -63,55 +79,24 @@ class DockPoller {
     return true
   }
 
-  private func poll() {
-    let dockItems = DockItem.list()
-
-    let names = dockItems.compactMap { $0.title }.sorted()
-    if names != state.dockAppNames {
-      state.dockAppNames = names
-    }
-
-    for item in dockItems {
-      guard state.appIcons[item.title] == nil, let url = item.appURL else { continue }
-      let icon = NSWorkspace.shared.icon(forFile: url.path)
-      icon.size = NSSize(width: 32, height: 32)
-      state.appIcons[item.title] = icon
-    }
-
+  private func rebuildEffectConfigs() {
     var configs: [GlowConfig] = []
     var lineConfigs: [GlowConfig] = []
     var floatingDockItems: [FloatingDockItem] = []
-    var pollBadges: [String: String] = [:]
+
+    let frontmost = state.suppressWhileFocused ? state.frontmostAppName : nil
 
     for app in state.apps {
-      let badge: String?
-      if let overrides = currentBadgeOverrides(), let override = overrides[app.name] {
-        badge = override
-      } else if let dockItem = dockItems.first(where: { $0.title == app.name }) {
-        badge = dockItem.badgeCount()
-      } else {
-        badge = nil
-      }
+      guard let badge = state.currentBadges[app.name] else { continue }
 
-      if let badge {
-        pollBadges[app.name] = badge
-      }
-
-      guard let badge else {
-        state.acknowledgedBadges.removeValue(forKey: app.name)
+      if let acked = state.acknowledgedBadges[app.name],
+        shouldSuppress(current: badge, acknowledged: acked)
+      {
         continue
       }
 
-      if let acked = state.acknowledgedBadges[app.name] {
-        if shouldSuppress(current: badge, acknowledged: acked) {
-          // Track decreases so a return to the prior level counts as an increase
-          if badge != acked {
-            state.acknowledgedBadges[app.name] = badge
-          }
-          continue
-        } else {
-          state.acknowledgedBadges.removeValue(forKey: app.name)
-        }
+      if let frontmost, frontmost == app.name {
+        continue
       }
 
       switch app.effect {
@@ -130,9 +115,60 @@ class DockPoller {
       }
     }
 
-    state.currentBadges = pollBadges
     state.activeGlowConfigs = configs
     state.activeLineConfigs = lineConfigs
     state.activeFloatingDockApps = floatingDockItems
+  }
+
+  private func poll() {
+    let dockItems = DockItem.list()
+
+    let names = dockItems.compactMap { $0.title }.sorted()
+    if names != state.dockAppNames {
+      state.dockAppNames = names
+    }
+
+    for item in dockItems {
+      guard state.appIcons[item.title] == nil, let url = item.appURL else { continue }
+      let icon = NSWorkspace.shared.icon(forFile: url.path)
+      icon.size = NSSize(width: 32, height: 32)
+      state.appIcons[item.title] = icon
+    }
+
+    var pollBadges: [String: String] = [:]
+
+    for app in state.apps {
+      let badge: String?
+      if let overrides = currentBadgeOverrides(), let override = overrides[app.name] {
+        badge = override
+      } else if let dockItem = dockItems.first(where: { $0.title == app.name }) {
+        badge = dockItem.badgeCount()
+      } else {
+        badge = nil
+      }
+
+      if let badge {
+        pollBadges[app.name] = badge
+      }
+
+      guard badge != nil else {
+        state.acknowledgedBadges.removeValue(forKey: app.name)
+        continue
+      }
+
+      if let acked = state.acknowledgedBadges[app.name] {
+        if shouldSuppress(current: badge!, acknowledged: acked) {
+          // Track decreases so a return to the prior level counts as an increase
+          if badge! != acked {
+            state.acknowledgedBadges[app.name] = badge!
+          }
+        } else {
+          state.acknowledgedBadges.removeValue(forKey: app.name)
+        }
+      }
+    }
+
+    state.currentBadges = pollBadges
+    rebuildEffectConfigs()
   }
 }

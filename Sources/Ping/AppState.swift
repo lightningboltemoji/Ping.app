@@ -259,6 +259,8 @@ class AppState {
   var snoozedUntil: Date? = nil
   var acknowledgedBadges: [String: String] = [:]
   var currentBadges: [String: String] = [:]
+  var suppressWhileFocused = false
+  var frontmostAppName: String? = nil
 
   var isSnoozed: Bool {
     guard let snoozedUntil else { return false }
