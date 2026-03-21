@@ -99,6 +99,9 @@ class DockPoller {
         continue
       }
 
+      let appearance = AppState.resolvedAppearance(for: app, badge: badge)
+      guard appearance.enabled else { continue }
+
       switch app.effect {
       case .glow:
         configs.append(AppState.resolvedConfig(for: app, badge: badge))

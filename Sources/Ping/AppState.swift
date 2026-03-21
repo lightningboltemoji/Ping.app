@@ -70,6 +70,7 @@ enum GlowColor: String, CaseIterable, Codable {
 }
 
 struct GlowAppearance: Codable, Equatable {
+  var enabled: Bool = true
   var position: GlowPosition = .bottom
   var size: Double = 1.0
   var opacity: Double = 1.0

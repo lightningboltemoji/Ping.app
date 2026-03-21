@@ -191,7 +191,8 @@ struct AppCardView: View {
       onFloatingDockPreview(false)
       if app.glowSettings.settingsMode == .advanced {
         let badge = advancedTab == .nonNumeric ? "" : "1"
-        onPreview(AppState.resolvedConfig(for: app, badge: badge))
+        let appearance = AppState.resolvedAppearance(for: app, badge: badge)
+        onPreview(appearance.enabled ? AppState.resolvedConfig(for: app, badge: badge) : nil)
       } else {
         onPreview(AppState.resolvedConfig(for: app, badge: ""))
       }
@@ -200,9 +201,11 @@ struct AppCardView: View {
       onFloatingDockPreview(false)
       if app.glowSettings.settingsMode == .advanced {
         let badge = advancedTab == .nonNumeric ? "" : "1"
-        onLinePreview([
-          AppState.resolvedLineConfig(for: app, badge: badge, lineSettings: lineSettings)
-        ])
+        let appearance = AppState.resolvedAppearance(for: app, badge: badge)
+        onLinePreview(
+          appearance.enabled
+            ? [AppState.resolvedLineConfig(for: app, badge: badge, lineSettings: lineSettings)]
+            : [])
       } else {
         onLinePreview([
           AppState.resolvedLineConfig(for: app, badge: "", lineSettings: lineSettings)
@@ -315,22 +318,38 @@ struct AppCardView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
 
-        Divider().padding(.leading, 12)
+        let currentAppearance: Binding<GlowAppearance> =
+          app.glowSettings.settingsMode == .advanced
+          && advancedTab == .nonNumeric
+          ? $app.glowSettings.nonNumeric
+          : $app.glowSettings.normal
 
-        if app.effect == .glow {
-          GlowAppearanceControls(
-            appearance: app.glowSettings.settingsMode == .advanced
-              && advancedTab == .nonNumeric
-              ? $app.glowSettings.nonNumeric
-              : $app.glowSettings.normal
-          )
-        } else {
-          LineColorControls(
-            appearance: app.glowSettings.settingsMode == .advanced
-              && advancedTab == .nonNumeric
-              ? $app.glowSettings.nonNumeric
-              : $app.glowSettings.normal
-          )
+        if app.glowSettings.settingsMode == .advanced {
+          Divider().padding(.leading, 12)
+
+          HStack {
+            Text("Enabled")
+              .foregroundStyle(.secondary)
+            Spacer()
+            Toggle("Enabled", isOn: currentAppearance.enabled)
+              .labelsHidden()
+              .toggleStyle(.switch)
+              .controlSize(.regular)
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 8)
+        }
+
+        if currentAppearance.wrappedValue.enabled
+          || app.glowSettings.settingsMode != .advanced
+        {
+          Divider().padding(.leading, 12)
+
+          if app.effect == .glow {
+            GlowAppearanceControls(appearance: currentAppearance)
+          } else {
+            LineColorControls(appearance: currentAppearance)
+          }
         }
       }
 
